@@ -41,74 +41,25 @@ const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
   image={imgUrl(movie.backdrop_path, 'w780')}
 >
   <div class="watch-page">
-    <!-- Player area -->
-    <div class="watch-player-wrap">
-      <div class="watch-player">
-        <iframe
-          src={embedUrl}
-          title={`Watch ${movie.title}`}
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          allowfullscreen
-          class="watch-player__iframe"
-          loading="eager"
-        ></iframe>
-      </div>
-    </div>
 
-    <!-- Info + sidebar -->
-    <div class="watch-body container">
-      <div class="watch-main">
-        <!-- Breadcrumb -->
-        <nav class="watch-breadcrumb" aria-label="Breadcrumb">
-          <a href="/">Home</a>
-          <span aria-hidden="true">›</span>
-          <a href="/movies">Movies</a>
-          <span aria-hidden="true">›</span>
-          <a href={`/movie/${movie.id}`}>{movie.title}</a>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">Watch</span>
-        </nav>
+    <!-- ── Top row: player + sidebar ── -->
+    <div class="watch-top container">
 
-        <!-- Movie info bar -->
-        <div class="watch-info">
-          <img
-            src={poster}
-            alt={`${movie.title} poster`}
-            width="300" height="450"
-            loading="lazy" decoding="async"
-            class="watch-info__poster"
-          />
-          <div class="watch-info__text">
-            <h1 class="watch-info__title">{movie.title}
-              <span class="watch-info__year">({year})</span>
-            </h1>
-            <div class="watch-info__meta">
-              <span class={`watch-info__rating ${rClass}`}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-                {rating}
-              </span>
-              <span class="dot" aria-hidden="true">·</span>
-              <span>{runtime}</span>
-              {movie.genres && movie.genres.length > 0 && (
-                <>
-                  <span class="dot" aria-hidden="true">·</span>
-                  <span>{movie.genres.slice(0, 3).map(g => g.name).join(', ')}</span>
-                </>
-              )}
-            </div>
-            {movie.overview && <p class="watch-info__overview">{movie.overview}</p>}
-            <div class="watch-info__actions">
-              <a href={`/movie/${movie.id}`} class="btn btn--ghost">
-                ← Back to Details
-              </a>
-            </div>
-          </div>
+      <!-- Player -->
+      <div class="watch-player-wrap">
+        <div class="watch-player">
+          <iframe
+            src={embedUrl}
+            title={`Watch ${movie.title}`}
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            allowfullscreen
+            class="watch-player__iframe"
+            loading="eager"
+          ></iframe>
         </div>
       </div>
 
-      <!-- Recommendations sidebar -->
+      <!-- Sidebar: recommendations -->
       {recs.length > 0 && (
         <aside class="watch-sidebar" aria-label="More like this">
           <h2 class="watch-sidebar__title">More Like This</h2>
@@ -142,57 +93,215 @@ const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
         </aside>
       )}
     </div>
+
+    <!-- ── Bottom: movie info ── -->
+    <div class="watch-info-wrap container">
+
+      <!-- Breadcrumb -->
+      <nav class="watch-breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Home</a>
+        <span aria-hidden="true">›</span>
+        <a href="/movies">Movies</a>
+        <span aria-hidden="true">›</span>
+        <a href={`/movie/${movie.id}`}>{movie.title}</a>
+        <span aria-hidden="true">›</span>
+        <span aria-current="page">Watch</span>
+      </nav>
+
+      <div class="watch-info">
+        <img
+          src={poster}
+          alt={`${movie.title} poster`}
+          width="300" height="450"
+          loading="lazy" decoding="async"
+          class="watch-info__poster"
+        />
+        <div class="watch-info__text">
+          <h1 class="watch-info__title">
+            {movie.title}
+            <span class="watch-info__year">({year})</span>
+          </h1>
+          <div class="watch-info__meta">
+            <span class={`watch-info__rating ${rClass}`}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              {rating}
+            </span>
+            <span class="dot" aria-hidden="true">·</span>
+            <span>{runtime}</span>
+            {movie.genres && movie.genres.length > 0 && (
+              <>
+                <span class="dot" aria-hidden="true">·</span>
+                <span>{movie.genres.slice(0, 3).map(g => g.name).join(', ')}</span>
+              </>
+            )}
+          </div>
+          {movie.overview && <p class="watch-info__overview">{movie.overview}</p>}
+          <div class="watch-info__actions">
+            <a href={`/movie/${movie.id}`} class="btn btn--ghost">← Back to Details</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </BaseLayout>
 
 <style>
+  /* ── Page shell ─────────────────────────────────────────── */
   .watch-page {
-    min-height: 100dvh;
     background: #000;
     padding-top: var(--navbar-h);
+    padding-bottom: var(--space-16);
   }
 
-  /* Player */
+  /* ── Top row: player + sidebar side-by-side ────────────── */
+  .watch-top {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: var(--space-4);
+    align-items: start;
+    padding-top: var(--space-4);
+  }
+
+  /* ── Player ─────────────────────────────────────────────── */
   .watch-player-wrap {
     width: 100%;
+    aspect-ratio: 16 / 9;
     background: #000;
-    position: sticky;
-    top: var(--navbar-h);
-    z-index: 10;
-    height: min(56.25vw, 60vh);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
   }
 
   .watch-player {
     width: 100%;
     height: 100%;
-    background: #000;
-    position: relative;
   }
 
   .watch-player__iframe {
-    position: absolute;
-    inset: 0;
     width: 100%;
     height: 100%;
     border: none;
+    display: block;
   }
 
-  /* Body */
-  .watch-body {
-    display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: var(--space-8);
-    padding-block: var(--space-8) var(--space-16);
-    align-items: start;
-    background: var(--clr-bg);
-  }
-
-  /* Main info */
-  .watch-main {
+  /* ── Sidebar ─────────────────────────────────────────────── */
+  .watch-sidebar {
+    /* height is set by JS to match the player exactly */
+    height: var(--player-h, 400px);
     display: flex;
     flex-direction: column;
-    gap: var(--space-6);
+    background: var(--clr-bg-2);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+  }
+
+  .watch-sidebar__title {
+    flex-shrink: 0;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--clr-text-muted);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  /* List fills all remaining height and scrolls within it */
+  .watch-sidebar__list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  /* ── Sidebar cards ───────────────────────────────────────── */
+  .sidebar-card {
+    display: flex;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    text-decoration: none;
+    color: inherit;
+    transition: background var(--transition-fast);
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .sidebar-card:last-child { border-bottom: none; }
+  .sidebar-card:hover      { background: var(--clr-bg-elevated); }
+
+  .sidebar-card__poster {
+    position: relative;
+    width: 48px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    aspect-ratio: 2/3;
+    background: var(--clr-bg-card);
+  }
+
+  .sidebar-card__poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .sidebar-card__rating {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: rgba(10,10,15,0.85);
+  }
+
+  .sidebar-card__info {
+    flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sidebar-card__title {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--clr-text);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .sidebar-card:hover .sidebar-card__title { color: var(--clr-accent); }
+
+  .sidebar-card__year {
+    font-size: var(--text-xs);
+    color: var(--clr-text-muted);
+  }
+
+  .sidebar-card__overview {
+    font-size: var(--text-xs);
+    color: var(--clr-text-muted);
+    line-height: 1.5;
+    margin-top: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ── Movie info below the player ────────────────────────── */
+  .watch-info-wrap {
+    padding-top: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
   }
 
   .watch-breadcrumb {
@@ -204,13 +313,21 @@ const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
     flex-wrap: wrap;
   }
 
-  .watch-breadcrumb a { color: var(--clr-text-secondary); transition: color var(--transition-fast); }
+  .watch-breadcrumb a {
+    color: var(--clr-text-secondary);
+    transition: color var(--transition-fast);
+  }
+
   .watch-breadcrumb a:hover { color: var(--clr-accent); }
 
   .watch-info {
     display: flex;
     gap: var(--space-6);
     align-items: flex-start;
+    background: var(--clr-bg-card);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
   }
 
   .watch-info__poster {
@@ -267,130 +384,60 @@ const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
     color: var(--clr-text-secondary);
     line-height: 1.7;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
-  .watch-info__actions { display: flex; gap: var(--space-3); flex-wrap: wrap; }
-
-  /* Sidebar */
-  .watch-sidebar {
-    background: var(--clr-bg-2);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-xl);
-    overflow: hidden;
-  }
-
-  .watch-sidebar__title {
-    font-size: var(--text-sm);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--clr-text-muted);
-    padding: var(--space-4) var(--space-5);
-    border-bottom: 1px solid var(--clr-border);
-  }
-
-  .watch-sidebar__list {
-    display: flex;
-    flex-direction: column;
-    max-height: 640px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-  }
-
-  /* Sidebar card */
-  .sidebar-card {
+  .watch-info__actions {
     display: flex;
     gap: var(--space-3);
-    padding: var(--space-3) var(--space-4);
-    text-decoration: none;
-    color: inherit;
-    transition: background var(--transition-fast);
-    border-bottom: 1px solid var(--clr-border);
+    flex-wrap: wrap;
   }
 
-  .sidebar-card:last-child { border-bottom: none; }
-
-  .sidebar-card:hover { background: var(--clr-bg-elevated); }
-
-  .sidebar-card__poster {
-    position: relative;
-    width: 56px;
-    flex-shrink: 0;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    aspect-ratio: 2/3;
-    background: var(--clr-bg-card);
-  }
-
-  .sidebar-card__poster img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .sidebar-card__rating {
-    position: absolute;
-    bottom: 2px;
-    left: 2px;
-    font-size: 9px;
-    font-weight: 700;
-    padding: 1px 4px;
-    border-radius: 3px;
-    background: rgba(10,10,15,0.85);
-  }
-
-  .sidebar-card__info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .sidebar-card__title {
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--clr-text);
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .sidebar-card:hover .sidebar-card__title { color: var(--clr-accent); }
-
-  .sidebar-card__year {
-    font-size: var(--text-xs);
-    color: var(--clr-text-muted);
-  }
-
-  .sidebar-card__overview {
-    font-size: var(--text-xs);
-    color: var(--clr-text-muted);
-    line-height: 1.5;
-    margin-top: 2px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  /* Responsive */
+  /* ── Responsive ─────────────────────────────────────────── */
   @media (max-width: 1024px) {
-    .watch-body { grid-template-columns: 1fr 300px; }
+    .watch-top { grid-template-columns: 1fr 280px; }
   }
 
   @media (max-width: 768px) {
-    .watch-player-wrap { position: static; height: 56.25vw; }
-    .watch-player { max-height: none; }
-    .watch-body { grid-template-columns: 1fr; }
-    .watch-sidebar { max-height: none; }
-    .watch-sidebar__list { max-height: 480px; }
+    .watch-top {
+      grid-template-columns: 1fr;
+      padding-top: var(--space-3);
+    }
+
+    /* On mobile sidebar is below the player — fixed height, scroll inside */
+    .watch-sidebar {
+      height: 420px;
+    }
+
+    .watch-info { padding: var(--space-4); }
     .watch-info__poster { width: 72px; }
   }
 </style>
+
+<script>
+  // Match sidebar height to the player height exactly.
+  // Runs on load and on every resize so it stays accurate.
+  function syncSidebarHeight() {
+    const player  = document.querySelector('.watch-player-wrap');
+    const sidebar = document.querySelector('.watch-sidebar');
+    if (!player || !sidebar) return;
+
+    // Only apply on desktop (grid is side-by-side above 768px)
+    if (window.innerWidth <= 768) {
+      sidebar.style.removeProperty('--player-h');
+      return;
+    }
+
+    const h = player.getBoundingClientRect().height;
+    if (h > 0) {
+      sidebar.style.setProperty('--player-h', h + 'px');
+    }
+  }
+
+  // Run immediately and after fonts/images settle
+  syncSidebarHeight();
+  window.addEventListener('load', syncSidebarHeight);
+  window.addEventListener('resize', syncSidebarHeight);
+</script>

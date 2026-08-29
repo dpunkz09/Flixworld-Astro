@@ -346,3 +346,26 @@ export function ratingColor(rating: number): string {
   if (rating >= 6) return 'rating--mid';
   return 'rating--low';
 }
+
+export interface Episode {
+  id: number;
+  episode_number: number;
+  name: string;
+  overview: string;
+  still_path: string | null;
+  air_date: string;
+  vote_average: number;
+  runtime: number | null;
+}
+
+export interface SeasonDetails {
+  id: number;
+  season_number: number;
+  name: string;
+  overview: string;
+  episodes: Episode[];
+}
+
+export async function getSeasonEpisodes(showId: number, seasonNumber: number) {
+  return tmdbFetch<SeasonDetails>(`/tv/${showId}/season/${seasonNumber}`);
+}
