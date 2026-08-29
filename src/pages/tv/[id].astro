@@ -1,0 +1,664 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  getTVDetails,
+  getTVCredits,
+  getTVVideos,
+  getTVRecommendations,
+  getTrailerKey,
+  imgUrl,
+  backdropUrl,
+  formatRating,
+  formatDate,
+  formatYear,
+  ratingColor,
+} from '../../lib/tmdb';
+
+const { id } = Astro.params;
+const showId = Number(id);
+if (!id || isNaN(showId)) return Astro.redirect('/404');
+
+let show, credits, videos, recommendations;
+try {
+  [show, credits, videos, recommendations] = await Promise.all([
+    getTVDetails(showId),
+    getTVCredits(showId),
+    getTVVideos(showId),
+    getTVRecommendations(showId),
+  ]);
+} catch {
+  return Astro.redirect('/404');
+}
+
+const trailer      = getTrailerKey(videos.results);
+const cast         = credits.cast.slice(0, 14);
+const creators     = credits.crew.filter(c => c.job === 'Creator').slice(0, 3);
+const recs         = recommendations.results.slice(0, 16);
+const rating       = formatRating(show.vote_average);
+const rClass       = ratingColor(show.vote_average);
+const firstAirYear = formatYear(show.first_air_date);
+const firstAirDate = formatDate(show.first_air_date);
+const runtime      = show.episode_run_time?.[0] ? `~${show.episode_run_time[0]}m / ep` : null;
+const poster       = imgUrl(show.poster_path, 'w500');
+const backdrop     = backdropUrl(show.backdrop_path);
+const ogImage      = imgUrl(show.backdrop_path, 'w780');
+---
+
+<BaseLayout
+  title={`${show.name} (${firstAirYear})`}
+  description={show.overview || `Watch ${show.name} on StreamVault.`}
+  image={ogImage}
+  type="video.tv_show"
+>
+  <!-- ============================================================
+       HERO
+  ============================================================ -->
+  <section class="detail-hero" aria-label={`${show.name} hero`}>
+    <div class="detail-hero__backdrop">
+      <img
+        src={backdrop}
+        alt=""
+        width="1920" height="1080"
+        fetchpriority="high" decoding="sync"
+        class="detail-hero__img"
+      />
+      <div class="detail-hero__gradient" aria-hidden="true"></div>
+    </div>
+
+    <div class="detail-hero__body container">
+      <div class="detail-hero__poster" aria-hidden="true">
+        <img
+          src={poster}
+          alt={`${show.name} poster`}
+          width="300" height="450"
+          fetchpriority="high" decoding="async"
+          class="detail-hero__poster-img"
+        />
+      </div>
+
+      <div class="detail-hero__info">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="/">Home</a>
+          <span aria-hidden="true">›</span>
+          <a href="/tv">TV Shows</a>
+          <span aria-hidden="true">›</span>
+          <span aria-current="page">{show.name}</span>
+        </nav>
+
+        <h1 class="detail-hero__title">
+          {show.name}
+          <span class="detail-hero__year">({firstAirYear})</span>
+        </h1>
+
+        {show.tagline && <p class="detail-hero__tagline">"{show.tagline}"</p>}
+
+        <div class="detail-hero__meta">
+          <span class={`detail-hero__rating ${rClass}`}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            {rating}
+          </span>
+          <span class="sep" aria-hidden="true">·</span>
+          <span>{firstAirDate}</span>
+          {runtime && <><span class="sep" aria-hidden="true">·</span><span>{runtime}</span></>}
+          {show.number_of_seasons != null && (
+            <><span class="sep" aria-hidden="true">·</span>
+            <span>{show.number_of_seasons} {show.number_of_seasons === 1 ? 'Season' : 'Seasons'}</span></>
+          )}
+          {show.status && <><span class="sep" aria-hidden="true">·</span><span class="badge badge--muted">{show.status}</span></>}
+        </div>
+
+        {show.genres && show.genres.length > 0 && (
+          <div class="detail-hero__genres">
+            {show.genres.map(g => (
+              <a href={`/tv?genre=${g.id}`} class="genre-pill">{g.name}</a>
+            ))}
+          </div>
+        )}
+
+        <p class="detail-hero__overview">{show.overview}</p>
+
+        <div class="detail-hero__actions">
+          <a href={`/watch/tv/${show.id}/1/1`} class="btn btn--primary btn--lg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M8 5.14v14l11-7-11-7z"/>
+            </svg>
+            Watch Now
+          </a>
+          {trailer && (
+            <button class="btn btn--secondary btn--lg" id="trailer-btn" aria-haspopup="dialog">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polygon points="23 7 16 12 23 17 23 7"/>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              </svg>
+              Trailer
+            </button>
+          )}
+          <a
+            href={`https://www.themoviedb.org/tv/${show.id}`}
+            target="_blank" rel="noopener noreferrer"
+            class="btn btn--ghost btn--lg"
+          >
+            TMDB ↗
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       BODY
+  ============================================================ -->
+  <div class="detail-body container">
+
+    <!-- Sidebar -->
+    <aside class="detail-sidebar">
+      <div class="detail-score" aria-label={`Rating: ${rating} out of 10`}>
+        <div class={`score-ring ${rClass}`}>
+          <svg viewBox="0 0 36 36" width="80" height="80" aria-hidden="true">
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="2.5"/>
+            <circle
+              cx="18" cy="18" r="15.9"
+              fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-dasharray={`${show.vote_average * 10} 100`}
+              stroke-dashoffset="25" stroke-linecap="round"
+            />
+          </svg>
+          <span class="score-ring__num">{rating}</span>
+        </div>
+        <div class="detail-score__info">
+          <span class="detail-score__label">User Score</span>
+          <span class="detail-score__votes">{show.vote_count.toLocaleString()} votes</span>
+        </div>
+      </div>
+
+      <dl class="detail-facts">
+        {creators.length > 0 && (
+          <>
+            <dt>{creators.length === 1 ? 'Creator' : 'Creators'}</dt>
+            <dd>{creators.map(c => c.name).join(', ')}</dd>
+          </>
+        )}
+        {show.first_air_date && (
+          <>
+            <dt>First Air</dt>
+            <dd>{firstAirDate}</dd>
+          </>
+        )}
+        {show.number_of_seasons != null && (
+          <>
+            <dt>Seasons</dt>
+            <dd>{show.number_of_seasons}</dd>
+          </>
+        )}
+        {show.number_of_episodes != null && (
+          <>
+            <dt>Episodes</dt>
+            <dd>{show.number_of_episodes}</dd>
+          </>
+        )}
+        {runtime && (
+          <>
+            <dt>Runtime</dt>
+            <dd>{runtime}</dd>
+          </>
+        )}
+        {show.original_language && (
+          <>
+            <dt>Language</dt>
+            <dd>{show.original_language.toUpperCase()}</dd>
+          </>
+        )}
+        {show.networks && show.networks.length > 0 && (
+          <>
+            <dt>Network</dt>
+            <dd>{show.networks.map(n => n.name).join(', ')}</dd>
+          </>
+        )}
+      </dl>
+    </aside>
+
+    <!-- Main -->
+    <div class="detail-main">
+
+      {cast.length > 0 && (
+        <section class="detail-section" aria-labelledby="cast-heading">
+          <h2 class="section-title" id="cast-heading">Cast</h2>
+          <ul class="cast-row scroll-row" role="list">
+            {cast.map(member => (
+              <li class="cast-card">
+                <div class="cast-card__img-wrap">
+                  <img
+                    src={imgUrl(member.profile_path, 'w185')}
+                    alt={member.name}
+                    width="185" height="278"
+                    loading="lazy" decoding="async"
+                    class="cast-card__img"
+                  />
+                </div>
+                <p class="cast-card__name">{member.name}</p>
+                <p class="cast-card__role">{member.character}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {recs.length > 0 && (
+        <section class="detail-section" aria-labelledby="recs-heading">
+          <div class="section-header">
+            <h2 class="section-title" id="recs-heading">More Like This</h2>
+            <a href="/tv" class="section-link">Browse TV Shows →</a>
+          </div>
+          <ul class="recs-grid" role="list">
+            {recs.map((item, i) => {
+              const recPoster = imgUrl(item.poster_path, 'w300');
+              const recYear   = formatYear(item.first_air_date);
+              const recRating = formatRating(item.vote_average);
+              const recClass  = ratingColor(item.vote_average);
+              return (
+                <li>
+                  <a href={`/tv/${item.id}`} class="rec-card">
+                    <div class="rec-card__poster">
+                      <img src={recPoster} alt={item.name} width="300" height="450"
+                        loading={i < 8 ? 'eager' : 'lazy'} decoding="async" />
+                      <span class={`rec-card__rating ${recClass}`}>
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        {recRating}
+                      </span>
+                    </div>
+                    <p class="rec-card__title">{item.name}</p>
+                    <p class="rec-card__year">{recYear}</p>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+    </div>
+  </div>
+
+  {trailer && (
+    <dialog class="trailer-modal" id="trailer-modal" aria-label="Series trailer">
+      <div class="trailer-modal__inner">
+        <button class="trailer-modal__close" id="trailer-close" aria-label="Close trailer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+        <div class="video-embed" id="trailer-embed"></div>
+      </div>
+    </dialog>
+  )}
+</BaseLayout>
+
+{trailer && (
+  <script define:vars={{ trailerKey: trailer }}>
+    const btn   = document.getElementById('trailer-btn');
+    const modal = document.getElementById('trailer-modal');
+    const close = document.getElementById('trailer-close');
+    const embed = document.getElementById('trailer-embed');
+    function open() {
+      embed.innerHTML = `<iframe src="https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0"
+        title="Trailer" allow="autoplay;encrypted-media;fullscreen" allowfullscreen></iframe>`;
+      modal.showModal();
+      document.body.style.overflow = 'hidden';
+    }
+    function shut() {
+      embed.innerHTML = '';
+      modal.close();
+      document.body.style.overflow = '';
+    }
+    btn?.addEventListener('click', open);
+    close?.addEventListener('click', shut);
+    modal?.addEventListener('click', e => { if (e.target === modal) shut(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
+  </script>
+)}
+
+<style>
+  .detail-hero {
+    position: relative;
+    width: 100%;
+    min-height: 600px;
+    display: flex;
+    align-items: flex-end;
+    margin-top: var(--navbar-h);
+    overflow: hidden;
+  }
+
+  .detail-hero__backdrop { position: absolute; inset: 0; }
+
+  .detail-hero__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 20%;
+  }
+
+  .detail-hero__gradient {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to right, rgba(10,10,15,0.97) 0%, rgba(10,10,15,0.75) 55%, rgba(10,10,15,0.15) 100%),
+      linear-gradient(to top,   rgba(10,10,15,1)    0%, transparent 50%);
+  }
+
+  .detail-hero__body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-10);
+    padding-bottom: var(--space-12);
+    padding-top: var(--space-12);
+    width: 100%;
+  }
+
+  .detail-hero__poster {
+    flex-shrink: 0;
+    width: 200px;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+    align-self: flex-end;
+  }
+
+  .detail-hero__poster-img { width: 100%; height: auto; display: block; }
+
+  .detail-hero__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding-bottom: var(--space-2);
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--clr-text-muted);
+    flex-wrap: wrap;
+  }
+
+  .breadcrumb a { color: var(--clr-text-secondary); transition: color var(--transition-fast); }
+  .breadcrumb a:hover { color: var(--clr-accent); }
+
+  .detail-hero__title {
+    font-family: var(--font-display);
+    font-size: clamp(var(--text-3xl), 4.5vw, 4rem);
+    letter-spacing: 0.02em;
+    line-height: 1.05;
+    color: #fff;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+  }
+
+  .detail-hero__year { color: rgba(255,255,255,0.5); font-size: 0.7em; margin-left: var(--space-2); }
+
+  .detail-hero__tagline { font-size: var(--text-base); font-style: italic; color: rgba(255,255,255,0.55); }
+
+  .detail-hero__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,0.7);
+  }
+
+  .detail-hero__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+    font-size: var(--text-base);
+  }
+
+  .sep { color: rgba(255,255,255,0.3); }
+
+  .detail-hero__genres { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+  .detail-hero__overview {
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,0.65);
+    line-height: 1.75;
+    max-width: 620px;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .detail-hero__actions { display: flex; gap: var(--space-3); flex-wrap: wrap; padding-top: var(--space-2); }
+
+  /* Body */
+  .detail-body {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: var(--space-12);
+    padding-block: var(--space-10) var(--space-16);
+    align-items: start;
+  }
+
+  .detail-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    position: sticky;
+    top: calc(var(--navbar-h) + var(--space-6));
+  }
+
+  .detail-score {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    background: var(--clr-bg-card);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+  }
+
+  .score-ring { position: relative; flex-shrink: 0; }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring.rating--high { color: var(--clr-success); }
+  .score-ring.rating--mid  { color: var(--clr-gold); }
+  .score-ring.rating--low  { color: var(--clr-error); }
+
+  .score-ring__num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--clr-text);
+  }
+
+  .detail-score__info { display: flex; flex-direction: column; gap: var(--space-1); }
+
+  .detail-score__label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--clr-text-muted);
+  }
+
+  .detail-score__votes { font-size: var(--text-sm); color: var(--clr-text-secondary); }
+
+  .detail-facts {
+    background: var(--clr-bg-card);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4) var(--space-3);
+  }
+
+  .detail-facts dt {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--clr-text-muted);
+    grid-column: 1;
+  }
+
+  .detail-facts dd {
+    font-size: var(--text-sm);
+    color: var(--clr-text);
+    font-weight: 500;
+    grid-column: 2;
+    word-break: break-word;
+  }
+
+  .detail-main { display: flex; flex-direction: column; gap: var(--space-12); min-width: 0; }
+
+  .detail-section { display: flex; flex-direction: column; gap: var(--space-5); }
+
+  .cast-row { gap: var(--space-4); }
+
+  .cast-card { width: 110px; flex-shrink: 0; }
+
+  .cast-card__img-wrap {
+    aspect-ratio: 2/3;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--clr-bg-card);
+    margin-bottom: var(--space-2);
+  }
+
+  .cast-card__img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-base); }
+  .cast-card:hover .cast-card__img { transform: scale(1.05); }
+
+  .cast-card__name { font-size: var(--text-xs); font-weight: 600; color: var(--clr-text); line-height: 1.3; }
+
+  .cast-card__role {
+    font-size: var(--text-xs);
+    color: var(--clr-text-muted);
+    margin-top: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .recs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: var(--space-4); }
+
+  .rec-card { display: block; text-decoration: none; color: inherit; }
+
+  .rec-card__poster {
+    position: relative;
+    aspect-ratio: 2/3;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--clr-bg-card);
+    margin-bottom: var(--space-2);
+    transition: transform var(--transition-base);
+  }
+
+  .rec-card:hover .rec-card__poster { transform: scale(1.04) translateY(-3px); box-shadow: var(--shadow-lg); }
+  .rec-card__poster img { width: 100%; height: 100%; object-fit: cover; }
+
+  .rec-card__rating {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-2);
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(6px);
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .rec-card__title {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--clr-text);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .rec-card:hover .rec-card__title { color: var(--clr-accent); }
+  .rec-card__year { font-size: var(--text-xs); color: var(--clr-text-muted); margin-top: 2px; }
+
+  /* Trailer modal */
+  .trailer-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    padding: 0;
+    border: none;
+    background: rgba(0,0,0,0.92);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .trailer-modal::backdrop { background: rgba(0,0,0,0.85); }
+  .trailer-modal[open] { display: flex; }
+
+  .trailer-modal__inner { position: relative; width: min(90vw, 900px); }
+
+  .trailer-modal__close {
+    position: absolute;
+    top: -44px;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid var(--clr-border-strong);
+    color: var(--clr-text);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+  }
+
+  .trailer-modal__close:hover { background: var(--clr-accent); }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .detail-body { grid-template-columns: 220px 1fr; gap: var(--space-8); }
+  }
+
+  @media (max-width: 768px) {
+    .detail-hero { min-height: 480px; }
+    .detail-hero__gradient {
+      background: linear-gradient(to top, rgba(10,10,15,1) 0%, rgba(10,10,15,0.6) 60%, rgba(10,10,15,0.2) 100%);
+    }
+    .detail-hero__body { flex-direction: column; align-items: flex-start; gap: var(--space-5); padding-bottom: var(--space-8); }
+    .detail-hero__poster { width: 120px; }
+    .detail-hero__overview { -webkit-line-clamp: 3; }
+    .detail-body { grid-template-columns: 1fr; }
+    .detail-sidebar { position: static; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    .recs-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  }
+
+  @media (max-width: 480px) {
+    .detail-sidebar { grid-template-columns: 1fr; }
+  }
+</style>

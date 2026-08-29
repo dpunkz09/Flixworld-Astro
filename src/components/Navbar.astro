@@ -1,0 +1,302 @@
+---
+const navLinks = [
+  { href: '/', label: 'Home' },
+  { href: '/movies', label: 'Movies' },
+  { href: '/tv', label: 'TV Shows' },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<header class="navbar" role="banner">
+  <div class="navbar__inner container">
+    <!-- Logo -->
+    <a href="/" class="navbar__logo" aria-label="StreamVault Home">
+      <span class="navbar__logo-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="6" fill="#e50914"/>
+          <path d="M8 7.5L15.5 14 8 20.5V7.5Z" fill="white"/>
+          <path d="M14.5 7.5L22 14l-7.5 6.5V7.5Z" fill="white" opacity="0.6"/>
+        </svg>
+      </span>
+      <span class="navbar__logo-text">Stream<span>Vault</span></span>
+    </a>
+
+    <!-- Primary nav -->
+    <nav class="navbar__nav" aria-label="Primary navigation">
+      <ul class="navbar__links" role="list">
+        {navLinks.map(({ href, label }) => (
+          <li>
+            <a
+              href={href}
+              class:list={['navbar__link', { 'navbar__link--active': currentPath === href || (href !== '/' && currentPath.startsWith(href)) }]}
+            >
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <!-- Right side -->
+    <div class="navbar__actions">
+      <a href="/search" class="navbar__icon-btn" aria-label="Search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+      </a>
+
+      <!-- Mobile menu toggle -->
+      <button class="navbar__menu-btn" id="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+        <span class="navbar__hamburger" aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile menu -->
+  <div class="navbar__mobile" id="mobile-menu" aria-hidden="true">
+    <nav aria-label="Mobile navigation">
+      <ul role="list">
+        {navLinks.map(({ href, label }) => (
+          <li>
+            <a
+              href={href}
+              class:list={['navbar__mobile-link', { 'navbar__mobile-link--active': currentPath === href || (href !== '/' && currentPath.startsWith(href)) }]}
+            >
+              {label}
+            </a>
+          </li>
+        ))}
+        <li>
+          <a href="/search" class="navbar__mobile-link">Search</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const toggle = document.getElementById('menu-toggle');
+  const menu   = document.getElementById('mobile-menu');
+
+  toggle?.addEventListener('click', () => {
+    const isOpen = menu?.getAttribute('aria-hidden') === 'false';
+    menu?.setAttribute('aria-hidden', String(isOpen));
+    toggle.setAttribute('aria-expanded', String(!isOpen));
+    toggle.classList.toggle('is-open', !isOpen);
+    menu?.classList.toggle('is-open', !isOpen);
+  });
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (menu?.classList.contains('is-open') && !toggle?.contains(e.target as Node) && !menu.contains(e.target as Node)) {
+      menu.setAttribute('aria-hidden', 'true');
+      toggle?.setAttribute('aria-expanded', 'false');
+      toggle?.classList.remove('is-open');
+      menu.classList.remove('is-open');
+    }
+  });
+</script>
+
+<style>
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: linear-gradient(to bottom, rgba(10,10,15,0.97) 0%, rgba(10,10,15,0.85) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--clr-border);
+    height: var(--navbar-h);
+    display: flex;
+    align-items: center;
+  }
+
+  .navbar__inner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    height: 100%;
+  }
+
+  /* Logo */
+  .navbar__logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+  }
+
+  .navbar__logo-text {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    letter-spacing: 0.04em;
+    color: var(--clr-text);
+    line-height: 1;
+  }
+
+  .navbar__logo-text span {
+    color: var(--clr-accent);
+  }
+
+  /* Nav links */
+  .navbar__nav {
+    flex: 1;
+  }
+
+  .navbar__links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .navbar__link {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--clr-text-secondary);
+    transition: color var(--transition-fast), background var(--transition-fast);
+    position: relative;
+  }
+
+  .navbar__link:hover {
+    color: var(--clr-text);
+    background: rgba(255,255,255,0.06);
+  }
+
+  .navbar__link--active {
+    color: var(--clr-text);
+  }
+
+  .navbar__link--active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2px;
+    background: var(--clr-accent);
+    border-radius: var(--radius-full);
+  }
+
+  /* Actions */
+  .navbar__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-left: auto;
+  }
+
+  .navbar__icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-md);
+    color: var(--clr-text-secondary);
+    transition: color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .navbar__icon-btn:hover {
+    color: var(--clr-text);
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* Hamburger */
+  .navbar__menu-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    border-radius: var(--radius-md);
+    color: var(--clr-text-secondary);
+    transition: color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .navbar__menu-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--clr-text);
+  }
+
+  .navbar__hamburger,
+  .navbar__hamburger::before,
+  .navbar__hamburger::after {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: currentColor;
+    border-radius: 2px;
+    transition: transform var(--transition-base), opacity var(--transition-base);
+    position: relative;
+  }
+
+  .navbar__hamburger::before,
+  .navbar__hamburger::after {
+    content: '';
+    position: absolute;
+    left: 0;
+  }
+
+  .navbar__hamburger::before { top: -5px; }
+  .navbar__hamburger::after  { top: 5px; }
+
+  .navbar__menu-btn.is-open .navbar__hamburger { background: transparent; }
+  .navbar__menu-btn.is-open .navbar__hamburger::before { transform: rotate(45deg) translate(3.5px, 3.5px); }
+  .navbar__menu-btn.is-open .navbar__hamburger::after  { transform: rotate(-45deg) translate(3.5px, -3.5px); }
+
+  /* Mobile menu */
+  .navbar__mobile {
+    display: none;
+    position: absolute;
+    top: var(--navbar-h);
+    left: 0;
+    right: 0;
+    background: rgba(10,10,15,0.98);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--clr-border);
+    padding: var(--space-4);
+    transform: translateY(-8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform var(--transition-base), opacity var(--transition-base);
+  }
+
+  .navbar__mobile.is-open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .navbar__mobile-link {
+    display: block;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--clr-text-secondary);
+    border-radius: var(--radius-md);
+    transition: color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .navbar__mobile-link:hover,
+  .navbar__mobile-link--active {
+    color: var(--clr-text);
+    background: rgba(255,255,255,0.06);
+  }
+
+  @media (max-width: 768px) {
+    .navbar__nav { display: none; }
+    .navbar__menu-btn { display: flex; }
+    .navbar__mobile { display: block; }
+  }
+</style>

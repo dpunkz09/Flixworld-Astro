@@ -1,0 +1,169 @@
+---
+import MovieCard from './MovieCard.astro';
+import type { Movie, TVShow } from '../lib/tmdb';
+
+interface Props {
+  title: string;
+  items: (Movie | TVShow)[];
+  type: 'movie' | 'tv';
+  viewAllHref?: string;
+  /** Card width in pixels, default 160 */
+  cardWidth?: number;
+}
+
+const {
+  title,
+  items,
+  type,
+  viewAllHref,
+  cardWidth = 160,
+} = Astro.props;
+
+const rowId = `row-${title.toLowerCase().replace(/\s+/g, '-')}`;
+---
+
+<section class="media-row page-section" aria-labelledby={`${rowId}-title`}>
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title" id={`${rowId}-title`}>{title}</h2>
+      {viewAllHref && (
+        <a href={viewAllHref} class="section-link" aria-label={`View all ${title}`}>
+          View All
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </a>
+      )}
+    </div>
+
+    <div class="media-row__wrapper">
+      <!-- Fade edges -->
+      <div class="media-row__fade media-row__fade--left" aria-hidden="true"></div>
+      <div class="media-row__fade media-row__fade--right" aria-hidden="true"></div>
+
+      <!-- Scroll buttons -->
+      <button
+        class="media-row__scroll-btn media-row__scroll-btn--left"
+        aria-label={`Scroll ${title} left`}
+        data-row={rowId}
+        data-dir="-1"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+      </button>
+
+      <ul
+        class="scroll-row media-row__list"
+        id={rowId}
+        role="list"
+        aria-label={title}
+        style={`--card-w: ${cardWidth}px`}
+      >
+        {items.map((item, i) => (
+          <li class="media-row__item">
+            <MovieCard item={item} type={type} lazy={i > 3} />
+          </li>
+        ))}
+      </ul>
+
+      <button
+        class="media-row__scroll-btn media-row__scroll-btn--right"
+        aria-label={`Scroll ${title} right`}
+        data-row={rowId}
+        data-dir="1"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-row][data-dir]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rowId = btn.dataset.row!;
+      const dir   = Number(btn.dataset.dir);
+      const list  = document.getElementById(rowId);
+      if (!list) return;
+
+      const cardW = list.querySelector('li')?.offsetWidth ?? 200;
+      const gap   = 16;
+      list.scrollBy({ left: dir * (cardW + gap) * 3, behavior: 'smooth' });
+    });
+  });
+</script>
+
+<style>
+  .media-row__wrapper {
+    position: relative;
+  }
+
+  .media-row__list {
+    padding-block: var(--space-2);
+  }
+
+  .media-row__item {
+    width: var(--card-w, 160px);
+    flex-shrink: 0;
+  }
+
+  /* Fade edges */
+  .media-row__fade {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .media-row__fade--left {
+    left: 0;
+    background: linear-gradient(to right, var(--clr-bg), transparent);
+  }
+
+  .media-row__fade--right {
+    right: 0;
+    background: linear-gradient(to left, var(--clr-bg), transparent);
+  }
+
+  /* Scroll buttons */
+  .media-row__scroll-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-60%);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--clr-bg-elevated);
+    border: 1px solid var(--clr-border-strong);
+    color: var(--clr-text);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+  }
+
+  .media-row__scroll-btn--left  { left: -4px; }
+  .media-row__scroll-btn--right { right: -4px; }
+
+  .media-row__wrapper:hover .media-row__scroll-btn {
+    opacity: 1;
+  }
+
+  .media-row__scroll-btn:hover {
+    background: var(--clr-accent);
+    transform: translateY(-60%) scale(1.1);
+  }
+
+  @media (max-width: 768px) {
+    .media-row__scroll-btn { display: none; }
+    .media-row__fade       { display: none; }
+  }
+</style>

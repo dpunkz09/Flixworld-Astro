@@ -1,0 +1,165 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="footer__inner container">
+    <div class="footer__top">
+      <!-- Brand -->
+      <div class="footer__brand">
+        <a href="/" class="footer__logo" aria-label="StreamVault Home">
+          <svg width="24" height="24" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <rect width="28" height="28" rx="6" fill="#e50914"/>
+            <path d="M8 7.5L15.5 14 8 20.5V7.5Z" fill="white"/>
+            <path d="M14.5 7.5L22 14l-7.5 6.5V7.5Z" fill="white" opacity="0.6"/>
+          </svg>
+          <span>Stream<strong>Vault</strong></span>
+        </a>
+        <p class="footer__tagline">Discover movies &amp; TV shows powered by TMDB.</p>
+      </div>
+
+      <!-- Links -->
+      <nav class="footer__nav" aria-label="Footer navigation">
+        <div class="footer__col">
+          <h3 class="footer__col-title">Browse</h3>
+          <ul role="list">
+            <li><a href="/">Home</a></li>
+            <li><a href="/movies">Movies</a></li>
+            <li><a href="/tv">TV Shows</a></li>
+            <li><a href="/search">Search</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <h3 class="footer__col-title">Genres</h3>
+          <ul role="list">
+            <li><a href="/movies?genre=28">Action</a></li>
+            <li><a href="/movies?genre=35">Comedy</a></li>
+            <li><a href="/movies?genre=27">Horror</a></li>
+            <li><a href="/movies?genre=878">Sci-Fi</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <div class="footer__bottom">
+      <p class="footer__credit">
+        &copy; {year} StreamVault. Movie data provided by
+        <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer">TMDB</a>.
+        This product uses the TMDB API but is not endorsed or certified by TMDB.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background: var(--clr-bg-2);
+    border-top: 1px solid var(--clr-border);
+    margin-top: var(--space-20);
+  }
+
+  .footer__inner {
+    padding-block: var(--space-12) var(--space-8);
+  }
+
+  .footer__top {
+    display: flex;
+    gap: var(--space-16);
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: var(--space-10);
+  }
+
+  .footer__brand {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    max-width: 280px;
+  }
+
+  .footer__logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    letter-spacing: 0.04em;
+    color: var(--clr-text);
+  }
+
+  .footer__logo strong {
+    color: var(--clr-accent);
+    font-weight: inherit;
+  }
+
+  .footer__tagline {
+    font-size: var(--text-sm);
+    color: var(--clr-text-muted);
+    line-height: 1.5;
+  }
+
+  .footer__nav {
+    display: flex;
+    gap: var(--space-12);
+    flex-wrap: wrap;
+  }
+
+  .footer__col {
+    min-width: 120px;
+  }
+
+  .footer__col-title {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--clr-text-muted);
+    margin-bottom: var(--space-4);
+  }
+
+  .footer__col ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .footer__col a {
+    font-size: var(--text-sm);
+    color: var(--clr-text-secondary);
+    transition: color var(--transition-fast);
+  }
+
+  .footer__col a:hover {
+    color: var(--clr-text);
+  }
+
+  .footer__bottom {
+    border-top: 1px solid var(--clr-border);
+    padding-top: var(--space-6);
+  }
+
+  .footer__credit {
+    font-size: var(--text-xs);
+    color: var(--clr-text-muted);
+    line-height: 1.6;
+  }
+
+  .footer__credit a {
+    color: var(--clr-text-secondary);
+    transition: color var(--transition-fast);
+  }
+
+  .footer__credit a:hover {
+    color: var(--clr-accent);
+  }
+
+  @media (max-width: 640px) {
+    .footer__top {
+      gap: var(--space-8);
+    }
+
+    .footer__brand {
+      max-width: 100%;
+    }
+  }
+</style>

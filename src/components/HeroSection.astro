@@ -1,0 +1,404 @@
+---
+import { backdropUrl, imgUrl, formatRating, formatYear, ratingColor } from '../lib/tmdb';
+import type { Movie, TVShow } from '../lib/tmdb';
+
+interface Props {
+  items: (Movie | TVShow)[];
+  /** How many slides to show (default 5) */
+  count?: number;
+}
+
+const { items, count = 5 } = Astro.props;
+const slides = items.slice(0, count);
+---
+
+<section class="hero" aria-label="Featured content">
+  <div class="hero__track" id="hero-track" role="region" aria-live="polite" aria-atomic="true">
+    {slides.map((item, i) => {
+      const isMovie = 'title' in item;
+      const title   = isMovie ? (item as Movie).title : (item as TVShow).name;
+      const date    = isMovie ? (item as Movie).release_date : (item as TVShow).first_air_date;
+      const href    = `/${isMovie ? 'movie' : 'tv'}/${item.id}`;
+      const rating  = formatRating(item.vote_average);
+      const rClass  = ratingColor(item.vote_average);
+      const year    = formatYear(date);
+      const backdrop = backdropUrl(item.backdrop_path);
+      const poster   = imgUrl(item.poster_path, 'w185');
+
+      return (
+        <div
+          class:list={['hero__slide', { 'hero__slide--active': i === 0 }]}
+          data-index={i}
+          aria-hidden={i !== 0}
+        >
+          {/* Backdrop */}
+          <div class="hero__backdrop" aria-hidden="true">
+            <img
+              src={backdrop}
+              alt=""
+              width="1920"
+              height="1080"
+              loading={i === 0 ? 'eager' : 'lazy'}
+              decoding={i === 0 ? 'sync' : 'async'}
+              fetchpriority={i === 0 ? 'high' : 'low'}
+              class="hero__backdrop-img"
+            />
+            <div class="hero__backdrop-gradient"></div>
+          </div>
+
+          {/* Content */}
+          <div class="hero__content container">
+            <div class="hero__text">
+              <div class="hero__meta" aria-label="Details">
+                <span class={`hero__rating ${rClass}`}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                  {rating}
+                </span>
+                <span class="hero__year">{year}</span>
+                <span class="hero__type badge badge--accent">{isMovie ? 'Movie' : 'Series'}</span>
+              </div>
+
+              <h2 class="hero__title">{title}</h2>
+
+              <p class="hero__overview">{item.overview}</p>
+
+              <div class="hero__actions">
+                <a href={href} class="btn btn--primary btn--lg">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M8 5.14v14l11-7-11-7z"/>
+                  </svg>
+                  Watch Now
+                </a>
+                <a href={href} class="btn btn--secondary btn--lg">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 16v-4M12 8h.01"/>
+                  </svg>
+                  More Info
+                </a>
+              </div>
+            </div>
+
+            {/* Poster thumbnail (decorative) */}
+            <div class="hero__poster" aria-hidden="true">
+              <img
+                src={poster}
+                alt=""
+                width="185"
+                height="278"
+                loading={i === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                class="hero__poster-img"
+              />
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+
+  {/* Controls */}
+  <div class="hero__controls" aria-label="Slideshow controls">
+    <button class="hero__btn hero__btn--prev" id="hero-prev" aria-label="Previous slide">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
+    </button>
+
+    <div class="hero__dots" role="tablist" aria-label="Slides">
+      {slides.map((_, i) => (
+        <button
+          class:list={['hero__dot', { 'hero__dot--active': i === 0 }]}
+          role="tab"
+          aria-selected={i === 0}
+          aria-label={`Go to slide ${i + 1}`}
+          data-dot={i}
+        ></button>
+      ))}
+    </div>
+
+    <button class="hero__btn hero__btn--next" id="hero-next" aria-label="Next slide">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <path d="m9 18 6-6-6-6"/>
+      </svg>
+    </button>
+  </div>
+</section>
+
+<script>
+  class HeroSlider {
+    private track: HTMLElement;
+    private slides: NodeListOf<HTMLElement>;
+    private dots: NodeListOf<HTMLButtonElement>;
+    private current = 0;
+    private total: number;
+    private timer: ReturnType<typeof setTimeout> | null = null;
+    private readonly INTERVAL = 6000;
+
+    constructor() {
+      this.track  = document.getElementById('hero-track')!;
+      this.slides = this.track.querySelectorAll<HTMLElement>('.hero__slide');
+      this.dots   = document.querySelectorAll<HTMLButtonElement>('[data-dot]');
+      this.total  = this.slides.length;
+
+      document.getElementById('hero-prev')?.addEventListener('click', () => this.prev());
+      document.getElementById('hero-next')?.addEventListener('click', () => this.next());
+
+      this.dots.forEach(dot => {
+        dot.addEventListener('click', () => this.goTo(Number(dot.dataset.dot)));
+      });
+
+      // Pause on hover
+      this.track.addEventListener('mouseenter', () => this.pause());
+      this.track.addEventListener('mouseleave', () => this.play());
+
+      // Keyboard
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft')  this.prev();
+        if (e.key === 'ArrowRight') this.next();
+      });
+
+      this.play();
+    }
+
+    private goTo(index: number) {
+      this.slides[this.current].classList.remove('hero__slide--active');
+      this.slides[this.current].setAttribute('aria-hidden', 'true');
+      this.dots[this.current].classList.remove('hero__dot--active');
+      this.dots[this.current].setAttribute('aria-selected', 'false');
+
+      this.current = (index + this.total) % this.total;
+
+      this.slides[this.current].classList.add('hero__slide--active');
+      this.slides[this.current].setAttribute('aria-hidden', 'false');
+      this.dots[this.current].classList.add('hero__dot--active');
+      this.dots[this.current].setAttribute('aria-selected', 'true');
+    }
+
+    private next() { this.goTo(this.current + 1); this.restart(); }
+    private prev() { this.goTo(this.current - 1); this.restart(); }
+
+    private play() {
+      this.timer = setInterval(() => this.next(), this.INTERVAL);
+    }
+
+    private pause() {
+      if (this.timer) clearInterval(this.timer);
+    }
+
+    private restart() {
+      this.pause();
+      this.play();
+    }
+  }
+
+  new HeroSlider();
+</script>
+
+<style>
+  .hero {
+    position: relative;
+    width: 100%;
+    height: clamp(520px, 80vh, 780px);
+    overflow: hidden;
+    margin-top: var(--navbar-h);
+  }
+
+  /* Track */
+  .hero__track {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  /* Slide */
+  .hero__slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    pointer-events: none;
+  }
+
+  .hero__slide--active {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 1;
+  }
+
+  /* Backdrop */
+  .hero__backdrop {
+    position: absolute;
+    inset: 0;
+  }
+
+  .hero__backdrop-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+  }
+
+  .hero__backdrop-gradient {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to right, rgba(10,10,15,0.96) 0%, rgba(10,10,15,0.7) 45%, rgba(10,10,15,0.2) 100%),
+      linear-gradient(to top, rgba(10,10,15,0.9) 0%, transparent 40%);
+  }
+
+  /* Content */
+  .hero__content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    padding-bottom: var(--space-16);
+  }
+
+  .hero__text {
+    max-width: 580px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .hero__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .hero__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+    font-weight: 700;
+  }
+
+  .hero__year {
+    font-size: var(--text-sm);
+    color: var(--clr-text-secondary);
+  }
+
+  .hero__title {
+    font-family: var(--font-display);
+    font-size: clamp(var(--text-3xl), 5vw, var(--text-6xl));
+    letter-spacing: 0.02em;
+    line-height: 1.05;
+    color: var(--clr-text);
+    text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+  }
+
+  .hero__overview {
+    font-size: var(--text-sm);
+    color: var(--clr-text-secondary);
+    line-height: 1.7;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: 500px;
+  }
+
+  .hero__actions {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  /* Poster */
+  .hero__poster {
+    flex-shrink: 0;
+    width: 160px;
+  }
+
+  .hero__poster-img {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    aspect-ratio: 2/3;
+    object-fit: cover;
+  }
+
+  /* Controls */
+  .hero__controls {
+    position: absolute;
+    bottom: var(--space-6);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .hero__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--clr-border-strong);
+    color: var(--clr-text);
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast);
+  }
+
+  .hero__btn:hover {
+    background: rgba(255,255,255,0.2);
+    transform: scale(1.1);
+  }
+
+  .hero__dots {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .hero__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: width var(--transition-base), background var(--transition-base);
+  }
+
+  .hero__dot--active {
+    width: 24px;
+    border-radius: 3px;
+    background: var(--clr-accent);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero__poster { display: none; }
+
+    .hero__backdrop-gradient {
+      background:
+        linear-gradient(to top, rgba(10,10,15,0.98) 0%, rgba(10,10,15,0.5) 60%, rgba(10,10,15,0.3) 100%);
+    }
+
+    .hero__content {
+      align-items: flex-end;
+      padding-bottom: var(--space-20);
+    }
+
+    .hero__overview {
+      -webkit-line-clamp: 2;
+    }
+  }
+</style>
