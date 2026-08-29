@@ -13,7 +13,8 @@ module.exports = {
       node_args: "--max-old-space-size=768 --disable-proto=throw",
       env: {
         NODE_ENV: "production",
-        PORT: 3000, // give Astro a different port
+        HOST: "0.0.0.0",
+        PORT: 3000,
       },
       time: true,
     },
