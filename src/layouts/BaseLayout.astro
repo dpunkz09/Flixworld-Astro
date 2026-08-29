@@ -64,6 +64,22 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
     />
 
     <meta name="generator" content={Astro.generator} />
+
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5RNE9D5BN6"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(...args: unknown[]) { window.dataLayer.push(args); }
+      gtag('js', new Date());
+      gtag('config', 'G-5RNE9D5BN6');
+    </script>
+
+    <!-- Google AdSense -->
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3883277674447109"
+      crossorigin="anonymous"
+    ></script>
   </head>
   <body>
     <Navbar />
