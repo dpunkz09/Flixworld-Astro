@@ -6,7 +6,7 @@ import node from '@astrojs/node';
 // Astro 7: output is "static" by default. Pages with `export const prerender = false`
 // are rendered on-demand by the Node adapter.
 export default defineConfig({
-  output: 'static',
+  output: 'hybrid',
   adapter: node({ mode: 'standalone' }),
   image: {
     remotePatterns: [
