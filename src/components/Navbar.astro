@@ -11,15 +11,14 @@ const currentPath = Astro.url.pathname;
 <header class="navbar" role="banner">
   <div class="navbar__inner container">
     <!-- Logo -->
-    <a href="/" class="navbar__logo" aria-label="StreamVault Home">
-      <span class="navbar__logo-icon" aria-hidden="true">
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          <rect width="28" height="28" rx="6" fill="#e50914"/>
-          <path d="M8 7.5L15.5 14 8 20.5V7.5Z" fill="white"/>
-          <path d="M14.5 7.5L22 14l-7.5 6.5V7.5Z" fill="white" opacity="0.6"/>
-        </svg>
-      </span>
-      <span class="navbar__logo-text">Stream<span>Vault</span></span>
+    <a href="/" class="navbar__logo" aria-label="Flixworld Home">
+      <img
+        src="/assets/images/main-logo.png"
+        alt="Flixworld"
+        class="navbar__logo-img"
+        width="140"
+        height="36"
+      />
     </a>
 
     <!-- Primary nav -->
@@ -126,20 +125,13 @@ const currentPath = Astro.url.pathname;
   .navbar__logo {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
     flex-shrink: 0;
   }
 
-  .navbar__logo-text {
-    font-family: var(--font-display);
-    font-size: var(--text-xl);
-    letter-spacing: 0.04em;
-    color: var(--clr-text);
-    line-height: 1;
-  }
-
-  .navbar__logo-text span {
-    color: var(--clr-accent);
+  .navbar__logo-img {
+    height: 36px;
+    width: auto;
+    object-fit: contain;
   }
 
   /* Nav links */
@@ -296,7 +288,7 @@ const currentPath = Astro.url.pathname;
 
   @media (max-width: 768px) {
     .navbar__nav { display: none; }
-    .navbar__menu-btn { display: flex; }
-    .navbar__mobile { display: block; }
+    .navbar__menu-btn { display: none; }  /* bottom nav replaces mobile menu */
+    .navbar__mobile { display: none; }
   }
 </style>

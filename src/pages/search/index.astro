@@ -36,8 +36,8 @@ function buildUrl(p: number) {
 ---
 
 <BaseLayout
-  title={query ? `"${query}" — Search | StreamVault` : 'Search | StreamVault'}
-  description={query ? `Search results for "${query}" on StreamVault.` : 'Search for movies and TV shows on StreamVault.'}
+  title={query ? `"${query}" — Search | Flixworld` : 'Search | Flixworld'}
+  description={query ? `Search results for "${query}" on Flixworld.` : 'Search for movies and TV shows on Flixworld.'}
 >
   <div class="search-page">
     <!-- Hero search header -->
@@ -182,8 +182,8 @@ function buildUrl(p: number) {
   .search-page__header {
     background: var(--clr-bg-2);
     border-bottom: 1px solid var(--clr-border);
-    padding-top: calc(var(--navbar-h) + var(--space-10));
-    padding-bottom: var(--space-8);
+    padding-top: calc(var(--navbar-h) + var(--space-8));
+    padding-bottom: var(--space-6);
   }
 
   .search-page__title {
@@ -191,9 +191,9 @@ function buildUrl(p: number) {
     align-items: center;
     gap: var(--space-3);
     font-family: var(--font-display);
-    font-size: clamp(var(--text-3xl), 5vw, var(--text-5xl));
+    font-size: clamp(var(--text-2xl), 5vw, var(--text-5xl));
     letter-spacing: 0.03em;
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-5);
   }
 
   /* States */
@@ -202,7 +202,7 @@ function buildUrl(p: number) {
     flex-direction: column;
     align-items: center;
     gap: var(--space-4);
-    padding-block: var(--space-20);
+    padding-block: var(--space-12);
     text-align: center;
     color: var(--clr-text-secondary);
   }
@@ -213,15 +213,15 @@ function buildUrl(p: number) {
   }
 
   .search-state h2 {
-    font-size: var(--text-2xl);
+    font-size: clamp(var(--text-lg), 4vw, var(--text-2xl));
     font-weight: 700;
     color: var(--clr-text);
   }
 
   .search-state p {
-    font-size: var(--text-base);
+    font-size: var(--text-sm);
     color: var(--clr-text-secondary);
-    max-width: 400px;
+    max-width: 320px;
   }
 
   .search-state--error svg,
@@ -247,7 +247,7 @@ function buildUrl(p: number) {
 
   /* Results header */
   .search-results-header {
-    padding-block: var(--space-6) var(--space-4);
+    padding-block: var(--space-5) var(--space-3);
   }
 
   .search-results-count {
@@ -276,14 +276,16 @@ function buildUrl(p: number) {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-3);
-    padding-block: var(--space-8) var(--space-12);
+    gap: var(--space-2);
+    padding-block: var(--space-6) var(--space-12);
     flex-wrap: wrap;
   }
 
   .pagination__pages {
     display: flex;
     gap: var(--space-1);
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .pagination__page {
@@ -310,5 +312,59 @@ function buildUrl(p: number) {
     background: var(--clr-accent);
     color: #fff;
     border-color: var(--clr-accent);
+  }
+
+  /* ── Mobile ──────────────────────────────────── */
+  @media (max-width: 640px) {
+    .search-page__header {
+      padding-top: calc(var(--navbar-h) + var(--space-5));
+      padding-bottom: var(--space-5);
+    }
+
+    .search-page__title {
+      font-size: var(--text-2xl);
+      margin-bottom: var(--space-4);
+      gap: var(--space-2);
+    }
+
+    .search-page__title svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    /* 2 columns on small phones */
+    .media-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-3);
+    }
+
+    /* Slim down pagination on mobile — show fewer page numbers */
+    .pagination {
+      gap: var(--space-2);
+      padding-bottom: calc(var(--space-12) + 56px); /* clear bottom nav */
+    }
+
+    .pagination__pages {
+      gap: 4px;
+    }
+
+    .pagination__page {
+      width: 32px;
+      height: 32px;
+      font-size: var(--text-xs);
+    }
+
+    .pagination .btn {
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--text-xs);
+    }
+
+    .search-state {
+      padding-block: var(--space-10);
+    }
+
+    .search-suggestions {
+      gap: var(--space-1);
+    }
   }
 </style>

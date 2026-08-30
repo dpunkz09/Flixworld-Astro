@@ -43,7 +43,7 @@ const embedUrl = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${ep
 
 <BaseLayout
   title={`Watch ${show.name} S${seasonN}E${episodeN}`}
-  description={`Stream ${show.name} Season ${seasonN} Episode ${episodeN} on StreamVault.`}
+  description={`Stream ${show.name} Season ${seasonN} Episode ${episodeN} on Flixworld.`}
   image={imgUrl(show.backdrop_path, 'w780')}
 >
   <div class="watch-page">
@@ -711,7 +711,31 @@ const embedUrl = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${ep
 
     .watch-sidebar { height: 480px; }
 
-    .watch-info { padding: var(--space-4); }
+    .watch-info { padding: var(--space-4); gap: var(--space-4); }
     .watch-info__poster { width: 72px; }
+  }
+
+  @media (max-width: 480px) {
+    .watch-info {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .watch-info__poster { width: 80px; }
+
+    /* Stack all action buttons full-width */
+    .watch-info__actions {
+      flex-direction: column;
+    }
+
+    .watch-info__actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    /* Clear bottom nav */
+    .watch-page {
+      padding-bottom: calc(var(--space-16) + 56px);
+    }
   }
 </style>

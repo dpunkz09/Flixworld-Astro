@@ -187,4 +187,36 @@ const {
   .search-bar__submit:active {
     transform: scale(0.96);
   }
+
+  /* ── Mobile ──────────────────────────────────── */
+  @media (max-width: 640px) {
+    .search-bar,
+    .search-bar--large {
+      max-width: 100%;
+    }
+
+    .search-bar--large .search-bar__inner {
+      padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+    }
+
+    /* Hide the text label, keep the button as an icon-only pill */
+    .search-bar__submit {
+      padding: var(--space-2) var(--space-3);
+      font-size: 0;           /* hide text */
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Inject a search icon via pseudo-element on mobile */
+    .search-bar__submit::after {
+      content: '';
+      display: block;
+      width: 16px;
+      height: 16px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") center / contain no-repeat;
+    }
+  }
 </style>

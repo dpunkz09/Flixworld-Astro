@@ -1,0 +1,109 @@
+---
+const currentPath = Astro.url.pathname;
+
+const links = [
+  { href: '/',        label: 'Home',     icon: 'home'   },
+  { href: '/movies',  label: 'Movies',   icon: 'movie'  },
+  { href: '/tv',      label: 'TV Shows', icon: 'tv'     },
+  { href: '/search',  label: 'Search',   icon: 'search' },
+];
+
+function isActive(href: string) {
+  if (href === '/') return currentPath === '/';
+  return currentPath.startsWith(href);
+}
+---
+
+<nav class="bottom-nav" aria-label="Mobile navigation">
+  {links.map(({ href, label, icon }) => (
+    <a
+      href={href}
+      class:list={['bottom-nav__item', { 'bottom-nav__item--active': isActive(href) }]}
+      aria-label={label}
+      aria-current={isActive(href) ? 'page' : undefined}
+    >
+      <span class="material-symbols-rounded bottom-nav__icon" aria-hidden="true">{icon}</span>
+      <span class="bottom-nav__label">{label}</span>
+    </a>
+  ))}
+</nav>
+
+<style>
+  .bottom-nav {
+    display: none; /* shown only on mobile via media query */
+  }
+
+  @media (max-width: 768px) {
+    .bottom-nav {
+      display: flex;
+      align-items: stretch;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      height: 56px;
+      background: rgba(10, 10, 15, 0.97);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--clr-border);
+      /* Safe area for notched phones */
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      height: calc(56px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .bottom-nav__item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      text-decoration: none;
+      color: var(--clr-text-muted);
+      transition: color var(--transition-fast);
+      position: relative;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .bottom-nav__item:active {
+      opacity: 0.7;
+    }
+
+    /* Active indicator pill above icon */
+    .bottom-nav__item--active::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 32px;
+      height: 3px;
+      border-radius: 0 0 var(--radius-full) var(--radius-full);
+      background: var(--clr-accent);
+    }
+
+    .bottom-nav__item--active {
+      color: var(--clr-text);
+    }
+
+    .bottom-nav__item--active .bottom-nav__icon {
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+      color: var(--clr-accent);
+    }
+
+    .bottom-nav__icon {
+      font-size: 22px;
+      line-height: 1;
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+      transition: font-variation-settings var(--transition-fast), color var(--transition-fast);
+    }
+
+    .bottom-nav__label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      line-height: 1;
+    }
+  }
+</style>

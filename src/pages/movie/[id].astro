@@ -51,7 +51,7 @@ const ogImage      = imgUrl(movie.backdrop_path, 'w780');
 
 <BaseLayout
   title={`${movie.title} (${releaseYear})`}
-  description={movie.overview || `Watch ${movie.title} on StreamVault.`}
+  description={movie.overview || `Watch ${movie.title} on Flixworld.`}
   image={ogImage}
   type="video.movie"
 >
@@ -805,6 +805,11 @@ const ogImage      = imgUrl(movie.backdrop_path, 'w780');
   @media (max-width: 480px) {
     .detail-sidebar {
       grid-template-columns: 1fr;
+    }
+
+    /* Hide the hero poster on very small phones to reclaim space */
+    .detail-hero__poster {
+      display: none;
     }
   }
 </style>

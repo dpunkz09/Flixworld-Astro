@@ -394,11 +394,17 @@ const slides = items.slice(0, count);
 
     .hero__content {
       align-items: flex-end;
-      padding-bottom: var(--space-20);
+      /* leave room for controls (36px btn) + bottom nav (56px) + gap */
+      padding-bottom: calc(var(--space-6) + 36px + 56px + var(--space-4));
     }
 
     .hero__overview {
       -webkit-line-clamp: 2;
+    }
+
+    /* Lift the controls above the bottom nav */
+    .hero__controls {
+      bottom: calc(56px + var(--space-4));
     }
   }
 </style>

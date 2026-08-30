@@ -7,13 +7,14 @@ const year = new Date().getFullYear();
     <div class="footer__top">
       <!-- Brand -->
       <div class="footer__brand">
-        <a href="/" class="footer__logo" aria-label="StreamVault Home">
-          <svg width="24" height="24" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-            <rect width="28" height="28" rx="6" fill="#e50914"/>
-            <path d="M8 7.5L15.5 14 8 20.5V7.5Z" fill="white"/>
-            <path d="M14.5 7.5L22 14l-7.5 6.5V7.5Z" fill="white" opacity="0.6"/>
-          </svg>
-          <span>Stream<strong>Vault</strong></span>
+        <a href="/" class="footer__logo" aria-label="Flixworld Home">
+          <img
+            src="/assets/images/main-logo.png"
+            alt="Flixworld"
+            class="footer__logo-img"
+            width="120"
+            height="30"
+          />
         </a>
         <p class="footer__tagline">Discover movies &amp; TV shows powered by TMDB.</p>
       </div>
@@ -43,7 +44,7 @@ const year = new Date().getFullYear();
 
     <div class="footer__bottom">
       <p class="footer__credit">
-        &copy; {year} StreamVault. Movie data provided by
+        &copy; {year} Flixworld. Movie data provided by
         <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer">TMDB</a>.
         This product uses the TMDB API but is not endorsed or certified by TMDB.
       </p>
@@ -80,16 +81,12 @@ const year = new Date().getFullYear();
   .footer__logo {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-2);
-    font-family: var(--font-display);
-    font-size: var(--text-xl);
-    letter-spacing: 0.04em;
-    color: var(--clr-text);
   }
 
-  .footer__logo strong {
-    color: var(--clr-accent);
-    font-weight: inherit;
+  .footer__logo-img {
+    height: 30px;
+    width: auto;
+    object-fit: contain;
   }
 
   .footer__tagline {

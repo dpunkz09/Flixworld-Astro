@@ -37,7 +37,7 @@ const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
 
 <BaseLayout
   title={`Watch ${movie.title} (${year})`}
-  description={`Stream ${movie.title} online on StreamVault.`}
+  description={`Stream ${movie.title} online on Flixworld.`}
   image={imgUrl(movie.backdrop_path, 'w780')}
 >
   <div class="watch-page">
@@ -395,7 +395,6 @@ const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
     flex-wrap: wrap;
   }
 
-  /* ── Responsive ─────────────────────────────────────────── */
   @media (max-width: 1024px) {
     .watch-top { grid-template-columns: 1fr 280px; }
   }
@@ -411,8 +410,31 @@ const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
       height: 420px;
     }
 
-    .watch-info { padding: var(--space-4); }
+    .watch-info { padding: var(--space-4); gap: var(--space-4); }
     .watch-info__poster { width: 72px; }
+  }
+
+  @media (max-width: 480px) {
+    .watch-info {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .watch-info__poster { width: 80px; }
+
+    /* Stack action buttons full-width on small phones */
+    .watch-info__actions {
+      flex-direction: column;
+    }
+
+    .watch-info__actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .watch-page {
+      padding-bottom: calc(var(--space-16) + 56px);
+    }
   }
 </style>
 

@@ -60,8 +60,8 @@ const pageTitle = activeGenre
 ---
 
 <BaseLayout
-  title={`${pageTitle} | StreamVault`}
-  description={`Browse ${pageTitle.toLowerCase()} on StreamVault. Discover the best films curated from TMDB.`}
+  title={`${pageTitle} | Flixworld`}
+  description={`Browse ${pageTitle.toLowerCase()} on Flixworld. Discover the best films curated from TMDB.`}
 >
   <div class="movies-page">
     <div class="movies-page__header">
@@ -311,6 +311,8 @@ const pageTitle = activeGenre
   .pagination__pages {
     display: flex;
     gap: var(--space-1);
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .pagination__page {
@@ -337,5 +339,49 @@ const pageTitle = activeGenre
     background: var(--clr-accent);
     color: #fff;
     border-color: var(--clr-accent);
+  }
+
+  @media (max-width: 640px) {
+    .movies-page__header {
+      padding-top: calc(var(--navbar-h) + var(--space-5));
+      padding-bottom: var(--space-4);
+    }
+
+    .movies-page__title {
+      font-size: var(--text-2xl);
+      margin-bottom: var(--space-4);
+    }
+
+    .movies-page__title svg { width: 22px; height: 22px; }
+
+    .media-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-3);
+    }
+
+    .pagination {
+      gap: var(--space-2);
+      padding-bottom: calc(var(--space-12) + 56px);
+    }
+
+    .pagination__pages { gap: 4px; }
+
+    .pagination__page {
+      width: 32px;
+      height: 32px;
+      font-size: var(--text-xs);
+    }
+
+    .pagination .btn {
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--text-xs);
+    }
+
+    .filter-tabs ul { gap: var(--space-1); }
+
+    .filter-tab {
+      padding: var(--space-1) var(--space-3);
+      font-size: var(--text-xs);
+    }
   }
 </style>
