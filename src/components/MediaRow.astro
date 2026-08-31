@@ -82,8 +82,14 @@ const rowId = `row-${title.toLowerCase().replace(/\s+/g, '-')}`;
 </section>
 
 <script>
-  document.querySelectorAll<HTMLButtonElement>('[data-row][data-dir]').forEach(btn => {
-    btn.addEventListener('click', () => {
+  // Use event delegation on each wrapper instead of querying all buttons globally.
+  // This ensures each MediaRow instance only handles its own buttons,
+  // regardless of how many rows exist on the page.
+  document.querySelectorAll<HTMLElement>('.media-row__wrapper').forEach(wrapper => {
+    wrapper.addEventListener('click', (e) => {
+      const btn = (e.target as Element).closest<HTMLButtonElement>('[data-row][data-dir]');
+      if (!btn) return;
+
       const rowId = btn.dataset.row!;
       const dir   = Number(btn.dataset.dir);
       const list  = document.getElementById(rowId);

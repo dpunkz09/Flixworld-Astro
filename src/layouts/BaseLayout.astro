@@ -53,17 +53,31 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
 
     <!-- Preconnect to external origins -->
     <link rel="preconnect" href="https://image.tmdb.org" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
 
-    <!-- Google Fonts: Inter + display font + Material Symbols -->
+    <!-- Google Fonts: loaded non-blocking via media=print trick.
+         The browser fetches it as a non-render-blocking print stylesheet,
+         then swaps to 'all' once loaded. The <noscript> fallback covers
+         browsers with JS disabled. -->
     <link
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bebas+Neue&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bebas+Neue&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+      />
+    </noscript>
 
     <meta name="generator" content={Astro.generator} />
 
@@ -440,26 +454,6 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
     padding: var(--space-4) var(--space-8);
     font-size: var(--text-base);
     border-radius: var(--radius-lg);
-  }
-
-  /* =========================================================
-     SKELETON LOADER
-  ========================================================= */
-  @keyframes shimmer {
-    0%   { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-
-  .skeleton {
-    background: linear-gradient(
-      90deg,
-      var(--clr-bg-card) 25%,
-      var(--clr-bg-elevated) 50%,
-      var(--clr-bg-card) 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.6s infinite;
-    border-radius: var(--radius-md);
   }
 
   /* =========================================================

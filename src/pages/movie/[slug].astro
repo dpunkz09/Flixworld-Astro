@@ -10,17 +10,20 @@ import {
   getMovieRecommendations,
   getTrailerKey,
   imgUrl,
-  backdropUrl,
+  backdropUrlW1280,
   formatRating,
   formatRuntime,
   formatDate,
   formatYear,
   ratingColor,
 } from '../../lib/tmdb';
+import { parseSlugId, moviePath, watchMoviePath, tvPath } from '../../lib/slugify';
 
-const { id } = Astro.params;
-const movieId = Number(id);
-if (!id || isNaN(movieId)) return Astro.redirect('/404');
+const { slug } = Astro.params;
+const movieId = parseSlugId(slug ?? '');
+if (!slug || isNaN(movieId)) return Astro.redirect('/404');
+
+// Bare numeric slugs (old URLs like /movie/12345) — redirect to canonical slug
 
 let movie, credits, videos, recommendations;
 try {
@@ -45,8 +48,18 @@ const releaseYear  = formatYear(movie.release_date);
 const releaseDate  = formatDate(movie.release_date);
 const runtime      = formatRuntime(movie.runtime ?? 0);
 const poster       = imgUrl(movie.poster_path, 'w500');
-const backdrop     = backdropUrl(movie.backdrop_path);
+const backdrop     = backdropUrlW1280(movie.backdrop_path);
 const ogImage      = imgUrl(movie.backdrop_path, 'w780');
+
+// Redirect bare numeric slugs (e.g. /movie/12345) to canonical slug URL
+const canonicalSlug = moviePath(movie.title, releaseYear, movieId).replace('/movie/', '');
+if (slug !== canonicalSlug) {
+  return Astro.redirect(moviePath(movie.title, releaseYear, movieId), 301);
+}
+
+// Canonical paths used in links throughout the page
+const selfPath       = moviePath(movie.title, releaseYear, movieId);
+const watchPath      = watchMoviePath(movie.title, releaseYear, movieId);
 ---
 
 <BaseLayout
@@ -129,7 +142,7 @@ const ogImage      = imgUrl(movie.backdrop_path, 'w780');
 
         <!-- CTAs -->
         <div class="detail-hero__actions">
-          <a href={`/watch/movie/${movie.id}`} class="btn btn--primary btn--lg">
+          <a href={watchPath} class="btn btn--primary btn--lg">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M8 5.14v14l11-7-11-7z"/>
             </svg>
@@ -271,10 +284,10 @@ const ogImage      = imgUrl(movie.backdrop_path, 'w780');
               const recClass  = ratingColor(item.vote_average);
               return (
                 <li>
-                  <a href={`/movie/${item.id}`} class="rec-card">
+                  <a href={moviePath(item.title, formatYear(item.release_date), item.id)} class="rec-card">
                     <div class="rec-card__poster">
                       <img src={recPoster} alt={item.title} width="300" height="450"
-                        loading={i < 8 ? 'eager' : 'lazy'} decoding="async" />
+                        loading={i < 4 ? 'eager' : 'lazy'} decoding="async" />
                       <span class={`rec-card__rating ${recClass}`}>
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -330,7 +343,12 @@ const ogImage      = imgUrl(movie.backdrop_path, 'w780');
     btn?.addEventListener('click', open);
     close?.addEventListener('click', shut);
     modal?.addEventListener('click', e => { if (e.target === modal) shut(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
+    // Store reference so it can be removed — avoids accumulating listeners on navigation
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') shut(); };
+    document.addEventListener('keydown', onEsc);
+    document.addEventListener('astro:before-swap', () => {
+      document.removeEventListener('keydown', onEsc);
+    }, { once: true });
   </script>
 )}
 

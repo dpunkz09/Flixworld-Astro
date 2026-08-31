@@ -8,6 +8,7 @@ const BASE_URL = 'https://api.themoviedb.org/3';
 
 export const IMG_BASE = {
   original: 'https://image.tmdb.org/t/p/original',
+  w1280: 'https://image.tmdb.org/t/p/w1280',
   w500: 'https://image.tmdb.org/t/p/w500',
   w780: 'https://image.tmdb.org/t/p/w780',
   w300: 'https://image.tmdb.org/t/p/w300',
@@ -127,12 +128,39 @@ export interface PaginatedResponse<T> {
 }
 
 // ---------------------------------------------------------------------------
-// Core fetch helper
+// TTL in-memory cache
+// Avoids hammering TMDB on every request for identical endpoints.
+// Keyed by full URL string; entries expire after CACHE_TTL_MS.
+// ---------------------------------------------------------------------------
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
+const _cache = new Map<string, CacheEntry<unknown>>();
+
+function cacheGet<T>(key: string): T | null {
+  const entry = _cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { _cache.delete(key); return null; }
+  return entry.data as T;
+}
+
+function cacheSet<T>(key: string, data: T): void {
+  _cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+// ---------------------------------------------------------------------------
+// Core fetch helper — with cache + exponential-backoff retry on 429/503
 // ---------------------------------------------------------------------------
 
 async function tmdbFetch<T>(
   endpoint: string,
-  params: Record<string, string | number> = {}
+  params: Record<string, string | number> = {},
+  retries = 3
 ): Promise<T> {
   if (!API_KEY) {
     throw new Error(
@@ -148,13 +176,30 @@ async function tmdbFetch<T>(
     url.searchParams.set(key, String(value));
   }
 
-  const res = await fetch(url.toString());
+  const cacheKey = url.toString();
+  const cached = cacheGet<T>(cacheKey);
+  if (cached) return cached;
 
-  if (!res.ok) {
-    throw new Error(`TMDB API error ${res.status}: ${res.statusText} — ${endpoint}`);
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const res = await fetch(cacheKey);
+
+    // Retry on rate-limit or server errors with exponential backoff
+    if ((res.status === 429 || res.status === 503) && attempt < retries - 1) {
+      const delay = 500 * 2 ** attempt; // 500ms, 1s, 2s
+      await new Promise(r => setTimeout(r, delay));
+      continue;
+    }
+
+    if (!res.ok) {
+      throw new Error(`TMDB API error ${res.status}: ${res.statusText} — ${endpoint}`);
+    }
+
+    const data = await res.json() as T;
+    cacheSet(cacheKey, data);
+    return data;
   }
 
-  return res.json() as Promise<T>;
+  throw new Error(`TMDB API failed after ${retries} retries — ${endpoint}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -334,10 +379,16 @@ export function imgUrl(path: string | null | undefined, size: keyof typeof IMG_B
   return `${IMG_BASE[size]}${path}`;
 }
 
-/** Get backdrop URL */
+/** Get backdrop URL — uses original (1920px) by default */
 export function backdropUrl(path: string | null | undefined): string {
   if (!path) return '/placeholder-backdrop.svg';
   return `${IMG_BASE.original}${path}`;
+}
+
+/** Get backdrop URL at w1280 — suitable for hero/detail sections */
+export function backdropUrlW1280(path: string | null | undefined): string {
+  if (!path) return '/placeholder-backdrop.svg';
+  return `${IMG_BASE.w1280}${path}`;
 }
 
 /** Build a color class from vote average */

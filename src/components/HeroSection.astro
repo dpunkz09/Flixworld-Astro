@@ -1,5 +1,6 @@
 ---
-import { backdropUrl, imgUrl, formatRating, formatYear, ratingColor } from '../lib/tmdb';
+import { backdropUrlW1280, imgUrl, formatRating, formatYear, ratingColor } from '../lib/tmdb';
+import { moviePath, tvPath } from '../lib/slugify';
 import type { Movie, TVShow } from '../lib/tmdb';
 
 interface Props {
@@ -18,11 +19,13 @@ const slides = items.slice(0, count);
       const isMovie = 'title' in item;
       const title   = isMovie ? (item as Movie).title : (item as TVShow).name;
       const date    = isMovie ? (item as Movie).release_date : (item as TVShow).first_air_date;
-      const href    = `/${isMovie ? 'movie' : 'tv'}/${item.id}`;
+      const year    = formatYear(date);
+      const href    = isMovie
+        ? moviePath(title, year, item.id)
+        : tvPath(title, year, item.id);
       const rating  = formatRating(item.vote_average);
       const rClass  = ratingColor(item.vote_average);
-      const year    = formatYear(date);
-      const backdrop = backdropUrl(item.backdrop_path);
+      const backdrop = backdropUrlW1280(item.backdrop_path);
       const poster   = imgUrl(item.poster_path, 'w185');
 
       return (
@@ -134,8 +137,10 @@ const slides = items.slice(0, count);
     private dots: NodeListOf<HTMLButtonElement>;
     private current = 0;
     private total: number;
-    private timer: ReturnType<typeof setTimeout> | null = null;
+    private timer: ReturnType<typeof setInterval> | null = null;
     private readonly INTERVAL = 6000;
+    // Store bound handler references so they can be removed
+    private readonly _onKeydown: (e: KeyboardEvent) => void;
 
     constructor() {
       this.track  = document.getElementById('hero-track')!;
@@ -154,13 +159,20 @@ const slides = items.slice(0, count);
       this.track.addEventListener('mouseenter', () => this.pause());
       this.track.addEventListener('mouseleave', () => this.play());
 
-      // Keyboard
-      document.addEventListener('keydown', (e) => {
+      // Keyboard — store reference so it can be removed on cleanup
+      this._onKeydown = (e: KeyboardEvent) => {
         if (e.key === 'ArrowLeft')  this.prev();
         if (e.key === 'ArrowRight') this.next();
-      });
+      };
+      document.addEventListener('keydown', this._onKeydown);
 
       this.play();
+    }
+
+    /** Call before the page is swapped away (view transitions). */
+    destroy() {
+      this.pause();
+      document.removeEventListener('keydown', this._onKeydown);
     }
 
     private goTo(index: number) {
@@ -180,21 +192,36 @@ const slides = items.slice(0, count);
     private next() { this.goTo(this.current + 1); this.restart(); }
     private prev() { this.goTo(this.current - 1); this.restart(); }
 
-    private play() {
+    play() {
+      if (this.timer) return; // already running
       this.timer = setInterval(() => this.next(), this.INTERVAL);
     }
 
-    private pause() {
-      if (this.timer) clearInterval(this.timer);
+    pause() {
+      if (this.timer) { clearInterval(this.timer); this.timer = null; }
     }
 
-    private restart() {
-      this.pause();
-      this.play();
-    }
+    private restart() { this.pause(); this.play(); }
   }
 
-  new HeroSlider();
+  let slider: HeroSlider | null = null;
+
+  function initSlider() {
+    // Guard: only init if the hero exists on this page
+    if (!document.getElementById('hero-track')) return;
+    slider = new HeroSlider();
+  }
+
+  // Initial load
+  initSlider();
+
+  // View transitions: destroy before swap, re-init after
+  document.addEventListener('astro:before-swap', () => {
+    slider?.destroy();
+    slider = null;
+  });
+
+  document.addEventListener('astro:page-load', initSlider);
 </script>
 
 <style>

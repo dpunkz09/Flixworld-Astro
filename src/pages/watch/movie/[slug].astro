@@ -11,10 +11,11 @@ import {
   formatYear,
   ratingColor,
 } from '../../../lib/tmdb';
+import { parseSlugId, moviePath, watchMoviePath } from '../../../lib/slugify';
 
-const { id } = Astro.params;
-const movieId = Number(id);
-if (!id || isNaN(movieId)) return Astro.redirect('/404');
+const { slug } = Astro.params;
+const movieId = parseSlugId(slug ?? '');
+if (!slug || isNaN(movieId)) return Astro.redirect('/404');
 
 let movie, recommendations;
 try {
@@ -33,6 +34,14 @@ const year     = formatYear(movie.release_date);
 const runtime  = formatRuntime(movie.runtime ?? 0);
 const poster   = imgUrl(movie.poster_path, 'w300');
 const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
+
+// Redirect bare numeric slugs to canonical slug URL
+const canonicalSlug = watchMoviePath(movie.title, year, movieId).replace('/watch/movie/', '');
+if (slug !== canonicalSlug) {
+  return Astro.redirect(watchMoviePath(movie.title, year, movieId), 301);
+}
+
+const detailPath = moviePath(movie.title, year, movieId);
 ---
 
 <BaseLayout
@@ -70,7 +79,7 @@ const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
               const recYear   = formatYear(item.release_date);
               return (
                 <li>
-                  <a href={`/watch/movie/${item.id}`} class="sidebar-card">
+                  <a href={watchMoviePath(item.title, formatYear(item.release_date), item.id)} class="sidebar-card">
                     <div class="sidebar-card__poster">
                       <img
                         src={imgUrl(item.poster_path, 'w185')}
@@ -139,7 +148,7 @@ const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
           </div>
           {movie.overview && <p class="watch-info__overview">{movie.overview}</p>}
           <div class="watch-info__actions">
-            <a href={`/movie/${movie.id}`} class="btn btn--ghost">← Back to Details</a>
+            <a href={detailPath} class="btn btn--ghost">← Back to Details</a>
           </div>
         </div>
       </div>
@@ -439,27 +448,33 @@ const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
 </style>
 
 <script>
-  // Match sidebar height to the player height exactly.
-  // Runs on load and on every resize so it stays accurate.
-  function syncSidebarHeight() {
-    const player  = document.querySelector('.watch-player-wrap');
-    const sidebar = document.querySelector('.watch-sidebar');
-    if (!player || !sidebar) return;
+  // Use ResizeObserver on the player element — fires only when the player
+  // actually changes size, not on every window resize event.
+  // Stored on the element itself so it can be disconnected on navigation.
+  const player  = document.querySelector<HTMLElement>('.watch-player-wrap');
+  const sidebar = document.querySelector<HTMLElement>('.watch-sidebar');
 
-    // Only apply on desktop (grid is side-by-side above 768px)
+  let ro: ResizeObserver | null = null;
+
+  function syncHeight(playerEl: HTMLElement, sidebarEl: HTMLElement) {
     if (window.innerWidth <= 768) {
-      sidebar.style.removeProperty('--player-h');
+      sidebarEl.style.removeProperty('--player-h');
       return;
     }
-
-    const h = player.getBoundingClientRect().height;
-    if (h > 0) {
-      sidebar.style.setProperty('--player-h', h + 'px');
-    }
+    const h = playerEl.getBoundingClientRect().height;
+    if (h > 0) sidebarEl.style.setProperty('--player-h', `${h}px`);
   }
 
-  // Run immediately and after fonts/images settle
-  syncSidebarHeight();
-  window.addEventListener('load', syncSidebarHeight);
-  window.addEventListener('resize', syncSidebarHeight);
+  if (player && sidebar) {
+    syncHeight(player, sidebar);
+
+    ro = new ResizeObserver(() => syncHeight(player, sidebar));
+    ro.observe(player);
+  }
+
+  // Clean up on view-transition navigation
+  document.addEventListener('astro:before-swap', () => {
+    ro?.disconnect();
+    ro = null;
+  }, { once: true });
 </script>

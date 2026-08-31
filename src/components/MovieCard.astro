@@ -1,5 +1,6 @@
 ---
 import { imgUrl, formatYear, formatRating, ratingColor } from '../lib/tmdb';
+import { moviePath, tvPath } from '../lib/slugify';
 import type { Movie, TVShow } from '../lib/tmdb';
 
 interface Props {
@@ -14,8 +15,10 @@ const { item, type, lazy = true } = Astro.props;
 const isMovie = type === 'movie';
 const title   = isMovie ? (item as Movie).title : (item as TVShow).name;
 const date    = isMovie ? (item as Movie).release_date : (item as TVShow).first_air_date;
-const href    = `/${type}/${item.id}`;
 const year    = formatYear(date);
+const href    = isMovie
+  ? moviePath(title, year, item.id)
+  : tvPath(title, year, item.id);
 const rating  = formatRating(item.vote_average);
 const rClass  = ratingColor(item.vote_average);
 const poster  = imgUrl(item.poster_path, 'w300');
@@ -80,12 +83,11 @@ const alt     = `${title} poster`;
     overflow: hidden;
     background: var(--clr-bg-card);
     box-shadow: var(--shadow-card);
-    /* GPU layer for smooth hover */
-    will-change: transform;
     transition: transform var(--transition-base), box-shadow var(--transition-base);
   }
 
   .card:hover .card__poster {
+    will-change: transform;
     transform: scale(1.03) translateY(-4px);
     box-shadow: 0 12px 40px rgba(0,0,0,0.7);
   }

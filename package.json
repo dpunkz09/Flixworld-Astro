@@ -1,5 +1,5 @@
 {
-  "name": "streamvault",
+  "name": "flixworld-astro",
   "type": "module",
   "version": "0.0.1",
   "engines": {
@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@astrojs/node": "^11.1.4",
+    "@astrojs/sitemap": "^3.7.3",
     "astro": "^7.2.4"
   }
 }

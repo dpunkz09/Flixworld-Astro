@@ -11,13 +11,14 @@ import {
   formatYear,
   ratingColor,
 } from '../../../../../lib/tmdb';
+import { parseSlugId, tvPath, watchTVPath } from '../../../../../lib/slugify';
 
-const { id, season, episode } = Astro.params;
-const showId   = Number(id);
+const { slug, season, episode } = Astro.params;
+const showId   = parseSlugId(slug ?? '');
 const seasonN  = Math.max(1, Number(season)  || 1);
 const episodeN = Math.max(1, Number(episode) || 1);
 
-if (!id || isNaN(showId)) return Astro.redirect('/404');
+if (!slug || isNaN(showId)) return Astro.redirect('/404');
 
 let show, recommendations, seasonData;
 try {
@@ -38,7 +39,20 @@ const year          = formatYear(show.first_air_date);
 const poster        = imgUrl(show.poster_path, 'w300');
 const totalSeasons  = show.number_of_seasons ?? 1;
 
-const embedUrl = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${episodeN}`;
+const embedUrl  = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${episodeN}`;
+
+// Redirect bare numeric slugs to canonical slug URL
+const canonicalSlug = watchTVPath(show.name, year, showId, seasonN, episodeN)
+  .replace(`/watch/tv/`, '').split('/')[0];
+if (slug !== canonicalSlug) {
+  return Astro.redirect(watchTVPath(show.name, year, showId, seasonN, episodeN), 301);
+}
+
+// Helpers for building links in this page
+const showSlugBase  = watchTVPath(show.name, year, showId, 1, 1)
+  .replace(`/watch/tv/`, '').split('/')[0];
+const detailPath    = tvPath(show.name, year, showId);
+const epPath        = (s: number, e: number) => `/watch/tv/${showSlugBase}/${s}/${e}`;
 ---
 
 <BaseLayout
@@ -110,7 +124,7 @@ const embedUrl = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${ep
           <ul class="ep-list" role="list">
             {episodes.map(ep => {
               const isActive = ep.episode_number === episodeN;
-              const epUrl    = `/watch/tv/${showId}/${seasonN}/${ep.episode_number}`;
+              const epUrl    = epPath(seasonN, ep.episode_number);
               const still    = ep.still_path
                 ? imgUrl(ep.still_path, 'w185')
                 : '/placeholder-backdrop.svg';
@@ -165,7 +179,7 @@ const embedUrl = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${ep
                 const recYear   = formatYear(item.first_air_date);
                 return (
                   <li>
-                    <a href={`/watch/tv/${item.id}/1/1`} class="sidebar-card">
+                    <a href={watchTVPath(item.name, formatYear(item.first_air_date), item.id, 1, 1)} class="sidebar-card">
                       <div class="sidebar-card__poster">
                         <img
                           src={imgUrl(item.poster_path, 'w185')}
@@ -236,17 +250,11 @@ const embedUrl = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${ep
           </div>
           {show.overview && <p class="watch-info__overview">{show.overview}</p>}
           <div class="watch-info__actions">
-            <a href={`/tv/${show.id}`} class="btn btn--ghost">← Back to Details</a>
+            <a href={detailPath} class="btn btn--ghost">← Back to Details</a>
             {episodeN > 1 && (
-              <a
-                href={`/watch/tv/${showId}/${seasonN}/${episodeN - 1}`}
-                class="btn btn--ghost"
-              >← Prev Episode</a>
+              <a href={epPath(seasonN, episodeN - 1)} class="btn btn--ghost">← Prev Episode</a>
             )}
-            <a
-              href={`/watch/tv/${showId}/${seasonN}/${episodeN + 1}`}
-              class="btn btn--primary"
-            >Next Episode →</a>
+            <a href={epPath(seasonN, episodeN + 1)} class="btn btn--primary">Next Episode →</a>
           </div>
         </div>
       </div>
@@ -278,8 +286,8 @@ const embedUrl = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${ep
 
   // ── Season select → navigate ───────────────────────────────
   document.getElementById('season-select')?.addEventListener('change', e => {
-    const s = e.target.value;
-    window.location.href = `/watch/tv/${showId}/${s}/1`;
+    const s = (e.target as HTMLSelectElement).value;
+    window.location.href = epPath(Number(s), 1);
   });
 
   // ── Scroll active episode into view ───────────────────────
@@ -288,24 +296,27 @@ const embedUrl = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${ep
     activeEp.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   }
 
-  // ── Sync sidebar height to player ─────────────────────────
-  function syncSidebarHeight() {
-    const player  = document.querySelector('.watch-player-wrap');
-    const sidebar = document.querySelector('.watch-sidebar');
-    if (!player || !sidebar) return;
+  // ── Sync sidebar height to player — use ResizeObserver (no window resize leak) ──
+  const playerEl  = document.querySelector<HTMLElement>('.watch-player-wrap');
+  const sidebarEl = document.querySelector<HTMLElement>('.watch-sidebar');
 
-    if (window.innerWidth <= 768) {
-      sidebar.style.removeProperty('--player-h');
-      return;
-    }
+  let ro: ResizeObserver | null = null;
 
-    const h = player.getBoundingClientRect().height;
-    if (h > 0) sidebar.style.setProperty('--player-h', h + 'px');
+  function syncH(p: HTMLElement, s: HTMLElement) {
+    if (window.innerWidth <= 768) { s.style.removeProperty('--player-h'); return; }
+    const h = p.getBoundingClientRect().height;
+    if (h > 0) s.style.setProperty('--player-h', `${h}px`);
   }
 
-  syncSidebarHeight();
-  window.addEventListener('load',   syncSidebarHeight);
-  window.addEventListener('resize', syncSidebarHeight);
+  if (playerEl && sidebarEl) {
+    syncH(playerEl, sidebarEl);
+    ro = new ResizeObserver(() => syncH(playerEl, sidebarEl));
+    ro.observe(playerEl);
+  }
+
+  document.addEventListener('astro:before-swap', () => {
+    ro?.disconnect(); ro = null;
+  }, { once: true });
 </script>
 
 <style>

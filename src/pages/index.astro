@@ -1,4 +1,6 @@
 ---
+export const prerender = true;
+
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroSection from '../components/HeroSection.astro';
 import MediaRow from '../components/MediaRow.astro';
@@ -40,7 +42,7 @@ const heroItems = [
 ---
 
 <BaseLayout
-  title="StreamVault — Watch Movies & TV Shows"
+  title="Flixworld — Watch Movies & TV Shows"
   description="Discover trending movies and TV shows. Browse top-rated films, popular series, and now-playing content — all in one place."
 >
   <HeroSection items={heroItems} />
