@@ -241,8 +241,8 @@
       event.preventDefault();
       event.stopPropagation();
 
-      const id = (button as HTMLElement).dataset.removeId;
-      const type = (button as HTMLElement).dataset.removeType;
+      const id = button.dataset.removeId;
+      const type = button.dataset.removeType;
 
       if (!id || !type) return;
 
@@ -276,17 +276,21 @@
     });
 
     // ─────────────────────────────────────────────
-    // Init — guard against duplicate astro:page-load listeners
+    // Init
     // ─────────────────────────────────────────────
 
     render();
 
-    // Use { once: false } is the default, but we store a stable reference so
-    // Astro's view-transition re-runs don't stack up duplicate handlers.
-    // The script tag itself only executes once per page because Astro deduplicates
-    // inline scripts by content hash — but if that ever changes, the named
-    // function reference prevents duplicates when passed to addEventListener.
-    document.removeEventListener('astro:page-load', render);
-    document.addEventListener('astro:page-load', render);
+    // `astro:page-load` only fires when Astro's <ViewTransitions /> component
+    // is active. This project uses native CSS View Transitions instead, so
+    // `astro:page-load` never fires. Use `pageshow` instead — it fires on
+    // initial load AND when the page is restored from the bfcache (back/forward
+    // navigation), which is exactly when we need to re-read localStorage.
+    window.addEventListener('pageshow', (event) => {
+      // event.persisted = true means the page came from bfcache
+      if (event.persisted) {
+        render();
+      }
+    });
   })();
 </script>

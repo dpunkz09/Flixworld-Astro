@@ -275,7 +275,7 @@ const watchHistoryEntry = {
 </BaseLayout>
 
 <!-- ── Scripts ── -->
-<script define:vars={{ showId, seasonN, episodeN, __wh: watchHistoryEntry }}>
+<script define:vars={{ showId, seasonN, episodeN, showSlugBase, __wh: watchHistoryEntry }}>
   // ── Watch history ──────────────────────────────────────────
   (function () {
     try {
@@ -289,6 +289,11 @@ const watchHistoryEntry = {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned.slice(0, MAX_ITEMS)));
     } catch { /* private browsing or quota */ }
   })();
+
+  // ── ep path helper (mirrors server-side epPath) ──────────
+  function epPath(s, e) {
+    return `/watch/tv/${showSlugBase}/${s}/${e}`;
+  }
 
   // ── Tab switching ──────────────────────────────────────────
   const tabs    = document.querySelectorAll('.sidebar-tab');
@@ -311,7 +316,7 @@ const watchHistoryEntry = {
 
   // ── Season select → navigate ───────────────────────────────
   document.getElementById('season-select')?.addEventListener('change', e => {
-    const s = (e.target as HTMLSelectElement).value;
+    const s = e.target.value;
     window.location.href = epPath(Number(s), 1);
   });
 
@@ -320,7 +325,9 @@ const watchHistoryEntry = {
   if (activeEp) {
     activeEp.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   }
+</script>
 
+<script>
   // ── Sync sidebar height to player — use ResizeObserver (no window resize leak) ──
   const playerEl  = document.querySelector<HTMLElement>('.watch-player-wrap');
   const sidebarEl = document.querySelector<HTMLElement>('.watch-sidebar');
