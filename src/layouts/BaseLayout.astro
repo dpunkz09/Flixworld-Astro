@@ -594,4 +594,323 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
   @view-transition {
     navigation: auto;
   }
+
+  /* ============================================================
+     Section
+     ============================================================ */
+
+  .cw-section {
+    padding-block: var(--space-12);
+  }
+
+  /* ============================================================
+     Row
+     ============================================================ */
+
+  .cw-row-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  .cw-list {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: var(--space-4);
+
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    padding-block: var(--space-2);
+    padding-bottom: var(--space-3);
+
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    list-style: none;
+    margin: 0;
+  }
+
+  .cw-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ============================================================
+     Card item (reuse MediaRow sizing pattern)
+     ============================================================ */
+
+  .cw-item {
+    list-style: none;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    /* width is set via --card-w inline style on the <ul>,
+       applied as style attr on each <li> in JS */
+  }
+
+  /* Dynamically injected cards don't get Astro-scoped styles,
+     so we re-declare the .card rules here under .cw-item scope. */
+  .cw-item .card {
+    --card-w: 100%;
+    width: var(--card-w);
+    position: relative;
+  }
+
+  .cw-item .card__link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .cw-item .card__poster {
+    aspect-ratio: 2 / 3;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--clr-bg-card);
+    box-shadow: var(--shadow-card);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+  }
+
+  .cw-item:hover .card__poster {
+    will-change: transform;
+    transform: scale(1.03) translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+  }
+
+  .cw-item .card__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: filter var(--transition-base);
+  }
+
+  .cw-item:hover .card__img {
+    filter: brightness(0.65);
+  }
+
+  .cw-item .card__overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+    pointer-events: none;
+  }
+
+  .cw-item:hover .card__overlay {
+    opacity: 1;
+  }
+
+  .cw-item .card__play {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--clr-accent);
+    color: #fff;
+    box-shadow: 0 0 24px rgba(229,9,20,0.6);
+    transform: scale(0.8);
+    transition: transform var(--transition-spring);
+  }
+
+  .cw-item:hover .card__play {
+    transform: scale(1);
+  }
+
+  /* ============================================================
+     Episode badge (CW-specific)
+     ============================================================ */
+
+  .cw-card__episode {
+    position: absolute;
+    left: 0.5rem;
+    bottom: 0.5rem;
+    padding: 4px 7px;
+    border-radius: 4px;
+    background: rgba(10, 10, 15, 0.88);
+    backdrop-filter: blur(6px);
+    color: #f0f0f5;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+    z-index: 2;
+    pointer-events: none; /* Added to prevent blocking the X button */
+  }
+
+  /* ============================================================
+     Remove button — positioned over the poster
+     FIX: Better positioning and visibility
+     ============================================================ */
+
+  .cw-remove-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 10;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 28px; /* FIX: Slightly larger for better clickability */
+    height: 28px;
+    padding: 0;
+
+    border: 2px solid rgba(255, 255, 255, 0.3); /* FIX: More visible border */
+    border-radius: 50%;
+
+    background: rgba(10, 10, 15, 0.85);
+    backdrop-filter: blur(6px);
+
+    color: rgba(255, 255, 255, 0.9); /* FIX: Brighter color */
+    cursor: pointer;
+
+    opacity: 0;
+
+    transition:
+      opacity 200ms ease,
+      background 200ms ease,
+      transform 200ms ease,
+      border-color 200ms ease;
+  }
+
+  /* show on hover */
+  .cw-item:hover .cw-remove-btn {
+    opacity: 1;
+  }
+
+  .cw-remove-btn:hover {
+    background: rgba(220, 50, 50, 0.95);
+    color: white;
+    transform: scale(1.15);
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+
+  .cw-remove-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* ============================================================
+     Fade edges
+     ============================================================ */
+
+  .cw-fade {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .cw-fade--left {
+    left: 0;
+    background: linear-gradient(to right, var(--clr-bg), transparent);
+  }
+
+  .cw-fade--right {
+    right: 0;
+    background: linear-gradient(to left, var(--clr-bg), transparent);
+  }
+
+  /* ============================================================
+     Scroll buttons
+     ============================================================ */
+
+  .cw-scroll-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-60%);
+    z-index: 3;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+    padding: 0;
+
+    border: 1px solid var(--clr-border-strong);
+    border-radius: 50%;
+
+    background: var(--clr-bg-elevated);
+    color: var(--clr-text);
+
+    cursor: pointer;
+    opacity: 0;
+
+    transition:
+      opacity var(--transition-fast),
+      background var(--transition-fast),
+      transform var(--transition-fast);
+  }
+
+  .cw-scroll-btn--left {
+    left: -4px;
+  }
+
+  .cw-scroll-btn--right {
+    right: -4px;
+  }
+
+  .cw-row-wrapper:hover .cw-scroll-btn {
+    opacity: 1;
+  }
+
+  .cw-scroll-btn:hover {
+    background: var(--clr-accent);
+    transform: translateY(-60%) scale(1.1);
+  }
+
+  /* ============================================================
+     Clear button
+     ============================================================ */
+
+  .cw-clear-btn {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--clr-text-muted);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+  }
+
+  .cw-clear-btn:hover {
+    color: var(--clr-accent);
+  }
+
+  /* ============================================================
+     Mobile
+     ============================================================ */
+
+  @media (max-width: 768px) {
+    .cw-scroll-btn {
+      display: none;
+    }
+
+    .cw-fade {
+      display: none;
+    }
+
+    .cw-list {
+      --card-w: 140px;
+    }
+
+    /* always show remove btn on touch */
+    .cw-remove-btn {
+      opacity: 1;
+      width: 32px; /* FIX: Even larger on touch devices */
+      height: 32px;
+    }
+  }
 </style>

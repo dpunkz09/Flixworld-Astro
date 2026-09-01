@@ -5,6 +5,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroSection from '../components/HeroSection.astro';
 import MediaRow from '../components/MediaRow.astro';
 import SearchBar from '../components/SearchBar.astro';
+import ContinueWatching from '../components/ContinueWatching.astro';
 import {
   getTrendingMovies,
   getTrendingTV,
@@ -56,6 +57,9 @@ const heroItems = [
       </div>
     </div>
   </div>
+
+  <!-- Continue Watching (hidden until localStorage has entries) -->
+  <ContinueWatching />
 
   <!-- Trending Movies -->
   <MediaRow

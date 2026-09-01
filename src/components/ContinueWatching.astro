@@ -1,0 +1,292 @@
+---
+/**
+ * ContinueWatching — client-side only section.
+ *
+ * Reads fw:watch-history from localStorage after hydration.
+ * Uses MovieCard component for consistency with other sections.
+ */
+---
+
+<section class="cw-section page-section" id="cw-section" aria-labelledby="cw-title" hidden>
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title" id="cw-title">Continue Watching</h2>
+
+      <button
+        class="section-link cw-clear-btn"
+        id="cw-clear"
+        type="button"
+        aria-label="Clear continue watching history"
+      >
+        Clear all
+      </button>
+    </div>
+
+    <div class="cw-row-wrapper">
+      <div class="cw-fade cw-fade--left" aria-hidden="true"></div>
+      <div class="cw-fade cw-fade--right" aria-hidden="true"></div>
+
+      <button
+        class="cw-scroll-btn cw-scroll-btn--left"
+        type="button"
+        aria-label="Scroll continue watching left"
+        id="cw-scroll-left"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          aria-hidden="true"
+        >
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+
+      <ul
+        class="scroll-row cw-list"
+        id="cw-list"
+        role="list"
+        aria-label="Continue watching"
+        style="--card-w: 160px"
+      ></ul>
+
+      <button
+        class="cw-scroll-btn cw-scroll-btn--right"
+        type="button"
+        aria-label="Scroll continue watching right"
+        id="cw-scroll-right"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          aria-hidden="true"
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+  (() => {
+    const STORAGE_KEY = 'fw:watch-history';
+    const IMG_BASE_W300 = 'https://image.tmdb.org/t/p/w300';
+
+    // ─────────────────────────────────────────────
+    // Storage
+    // ─────────────────────────────────────────────
+
+    function loadHistory() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        const list = JSON.parse(raw);
+        return Array.isArray(list) ? list : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveHistory(list) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      } catch {
+        // Ignore localStorage errors.
+      }
+    }
+
+    function removeEntry(id, type) {
+      // Reuse the already-loaded list passed in from render to avoid a second
+      // localStorage read + JSON.parse on every remove action.
+      const current = loadHistory();
+      saveHistory(
+        current.filter(
+          (entry) => !(String(entry.id) === String(id) && entry.type === type)
+        )
+      );
+    }
+
+    function clearHistory() {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // Ignore localStorage errors.
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // Card
+    // ─────────────────────────────────────────────
+
+    // Reusable node avoids creating a throwaway element on every call.
+    const _escapeNode = document.createElement('span');
+    function escapeHTML(value) {
+      _escapeNode.textContent = value ?? '';
+      return _escapeNode.innerHTML;
+    }
+
+    function buildCard(entry) {
+      const posterSrc = entry.posterPath
+        ? `${IMG_BASE_W300}${entry.posterPath}`
+        : '/placeholder-poster.svg';
+
+      const title = escapeHTML(entry.title || 'Unknown title');
+      const href = entry.href || '#';
+
+      const epLabel =
+        entry.type === 'tv' && entry.season != null
+          ? `S${entry.season} · E${entry.episode}`
+          : null;
+
+      const li = document.createElement('li');
+      li.className = 'cw-item';
+      li.style.cssText = 'width: var(--card-w, 160px); flex-shrink: 0; position: relative;';
+      li.dataset.id = String(entry.id);
+      li.dataset.type = entry.type;
+
+      li.innerHTML = `
+        <a
+          href="${href}"
+          class="card__link"
+          aria-label="Continue watching ${title}"
+          style="display:block;text-decoration:none;color:inherit;position:relative;"
+        >
+          <div class="card__poster" style="aspect-ratio:2/3;overflow:hidden;border-radius:var(--radius-lg);background:var(--clr-bg-card);position:relative;">
+            <img
+              src="${posterSrc}"
+              alt="${title} poster"
+              width="300"
+              height="450"
+              loading="lazy"
+              decoding="async"
+              class="card__img"
+              style="width:100%;height:100%;object-fit:cover;display:block;"
+            />
+
+            <div class="card__overlay" aria-hidden="true">
+              <span class="card__play">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M8 5.14v14l11-7-11-7z" />
+                </svg>
+              </span>
+            </div>
+
+            ${epLabel ? `<div class="cw-card__episode" aria-label="${epLabel}">${epLabel}</div>` : ''}
+          </div>
+        </a>
+
+        <button
+          class="cw-remove-btn"
+          type="button"
+          aria-label="Remove ${title} from continue watching"
+          data-remove-id="${entry.id}"
+          data-remove-type="${entry.type}"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      `;
+
+      return li;
+    }
+
+    // ─────────────────────────────────────────────
+    // Render
+    // ─────────────────────────────────────────────
+
+    function render() {
+      const section = document.getElementById('cw-section');
+      const list = document.getElementById('cw-list');
+
+      if (!section || !list) return;
+
+      const history = loadHistory();
+
+      if (history.length === 0) {
+        list.innerHTML = '';
+        section.hidden = true;
+        return;
+      }
+
+      // Build fragment off-DOM to avoid repeated reflows during appendChild.
+      const fragment = document.createDocumentFragment();
+      history.forEach((entry) => fragment.appendChild(buildCard(entry)));
+
+      list.innerHTML = '';
+      list.appendChild(fragment);
+
+      section.hidden = false;
+    }
+
+    // ─────────────────────────────────────────────
+    // Remove button
+    // ─────────────────────────────────────────────
+
+    document.getElementById('cw-list')?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const button = target.closest('.cw-remove-btn');
+      if (!button) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const id = (button as HTMLElement).dataset.removeId;
+      const type = (button as HTMLElement).dataset.removeType;
+
+      if (!id || !type) return;
+
+      removeEntry(id, type);
+      render();
+    });
+
+    // ─────────────────────────────────────────────
+    // Clear all
+    // ─────────────────────────────────────────────
+
+    document.getElementById('cw-clear')?.addEventListener('click', () => {
+      clearHistory();
+      render();
+    });
+
+    // ─────────────────────────────────────────────
+    // Scrolling
+    // ─────────────────────────────────────────────
+
+    const scrollAmount = 600;
+    // Cache the list reference — no need to re-query on every button click.
+    const cwList = document.getElementById('cw-list');
+
+    document.getElementById('cw-scroll-left')?.addEventListener('click', () => {
+      cwList?.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    });
+
+    document.getElementById('cw-scroll-right')?.addEventListener('click', () => {
+      cwList?.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    });
+
+    // ─────────────────────────────────────────────
+    // Init — guard against duplicate astro:page-load listeners
+    // ─────────────────────────────────────────────
+
+    render();
+
+    // Use { once: false } is the default, but we store a stable reference so
+    // Astro's view-transition re-runs don't stack up duplicate handlers.
+    // The script tag itself only executes once per page because Astro deduplicates
+    // inline scripts by content hash — but if that ever changes, the named
+    // function reference prevents duplicates when passed to addEventListener.
+    document.removeEventListener('astro:page-load', render);
+    document.addEventListener('astro:page-load', render);
+  })();
+</script>

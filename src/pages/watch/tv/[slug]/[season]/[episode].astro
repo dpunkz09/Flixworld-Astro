@@ -53,6 +53,17 @@ const showSlugBase  = watchTVPath(show.name, year, showId, 1, 1)
   .replace(`/watch/tv/`, '').split('/')[0];
 const detailPath    = tvPath(show.name, year, showId);
 const epPath        = (s: number, e: number) => `/watch/tv/${showSlugBase}/${s}/${e}`;
+
+const watchHistoryEntry = {
+  id:         showId,
+  type:       'tv' as const,
+  title:      show.name,
+  year,
+  posterPath: show.poster_path ?? null,
+  href:       watchTVPath(show.name, year, showId, seasonN, episodeN),
+  season:     seasonN,
+  episode:    episodeN,
+};
 ---
 
 <BaseLayout
@@ -264,7 +275,21 @@ const epPath        = (s: number, e: number) => `/watch/tv/${showSlugBase}/${s}/
 </BaseLayout>
 
 <!-- ── Scripts ── -->
-<script define:vars={{ showId, seasonN, episodeN }}>
+<script define:vars={{ showId, seasonN, episodeN, __wh: watchHistoryEntry }}>
+  // ── Watch history ──────────────────────────────────────────
+  (function () {
+    try {
+      const STORAGE_KEY = 'fw:watch-history';
+      const MAX_ITEMS   = 20;
+      const entry = { ...__wh, type: 'tv', watchedAt: Date.now() };
+      const raw    = localStorage.getItem(STORAGE_KEY);
+      const list   = raw ? JSON.parse(raw) : [];
+      const pruned = list.filter((e) => !(e.id === entry.id && e.type === entry.type));
+      pruned.unshift(entry);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned.slice(0, MAX_ITEMS)));
+    } catch { /* private browsing or quota */ }
+  })();
+
   // ── Tab switching ──────────────────────────────────────────
   const tabs    = document.querySelectorAll('.sidebar-tab');
   const panels  = document.querySelectorAll('.sidebar-panel');
