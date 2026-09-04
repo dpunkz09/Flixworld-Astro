@@ -142,7 +142,7 @@ const watchPath      = watchMoviePath(movie.title, releaseYear, movieId);
 
         <!-- CTAs -->
         <div class="detail-hero__actions">
-          <a href={watchPath} class="btn btn--primary btn--lg">
+          <a href={watchPath} class="btn btn--primary btn--lg" id="watch-btn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M8 5.14v14l11-7-11-7z"/>
             </svg>
@@ -322,9 +322,27 @@ const watchPath      = watchMoviePath(movie.title, releaseYear, movieId);
   )}
 </BaseLayout>
 
+<script define:vars={{ itemId: movieId, defaultWatchPath: watchPath }}>
+  try {
+    const raw = localStorage.getItem('fw:watch-history');
+    if (raw) {
+      const history = JSON.parse(raw);
+      const entry = Array.isArray(history)
+        ? history.find((e) => e.id === itemId && e.type === 'movie')
+        : null;
+      if (entry) {
+        const btn = document.getElementById('watch-btn');
+        if (btn) {
+          btn.href = entry.href;
+          btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.14v14l11-7-11-7z"/></svg> Resume`;
+        }
+      }
+    }
+  } catch {}
+</script>
+
 {trailer && (
-  <script define:vars={{ trailerKey: trailer }}>
-    const btn   = document.getElementById('trailer-btn');
+  <script define:vars={{ trailerKey: trailer }}>    const btn   = document.getElementById('trailer-btn');
     const modal = document.getElementById('trailer-modal');
     const close = document.getElementById('trailer-close');
     const embed = document.getElementById('trailer-embed');
