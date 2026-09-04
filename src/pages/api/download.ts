@@ -32,75 +32,77 @@ export const GET: APIRoute = async ({ url }) => {
 
   console.log(`[download] Fetching: ${apiUrl}`);
 
-  // Use a TransformStream to keep the connection alive while waiting for the
-  // upstream response. Cloudflare closes idle connections after ~100s — by
-  // flushing a space character every 5s we prevent that without buffering the
-  // actual response. The client ignores leading whitespace in JSON.
-  const { readable, writable } = new TransformStream();
-  const writer = writable.getWriter();
-  const enc    = new TextEncoder();
+  const enc = new TextEncoder();
 
-  // Keep-alive: write a space every 5 seconds so Cloudflare doesn't time out
-  const keepAlive = setInterval(() => {
-    writer.write(enc.encode(' ')).catch(() => clearInterval(keepAlive));
-  }, 5_000);
+  const stream = new ReadableStream({
+    async start(controller) {
+      // Write the opening bracket IMMEDIATELY — this is the first byte
+      // Cloudflare sees, so it won't time out waiting for origin to respond.
+      // The client will receive a JSON array: [<payload>]
+      controller.enqueue(enc.encode('['));
 
-  // Fetch upstream in the background, write result, close stream
-  (async () => {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 30_000);
+      // Keep-alive: enqueue a space every 5s while upstream is working
+      const keepAlive = setInterval(() => {
+        try { controller.enqueue(enc.encode(' ')); } catch {}
+      }, 5_000);
 
-      let upstream: Response;
       try {
-        upstream = await fetch(apiUrl, { signal: controller.signal });
+        const controller2 = new AbortController();
+        const timer = setTimeout(() => controller2.abort(), 30_000);
+
+        let upstream: Response;
+        try {
+          upstream = await fetch(apiUrl, { signal: controller2.signal });
+        } finally {
+          clearTimeout(timer);
+        }
+
+        let payload: object;
+
+        if (!upstream.ok) {
+          const body = await upstream.text().catch(() => '');
+          console.error(`[download] Upstream ${upstream.status}: ${body}`);
+          payload = { error: `Upstream error ${upstream.status}` };
+        } else {
+          const data = await upstream.json();
+          const directUrl: string | undefined =
+            data?.extracted?.url ??
+            data?.extracted?.streams?.[0]?.url;
+
+          if (!directUrl) {
+            console.error('[download] No URL in response:', JSON.stringify(data));
+            payload = { error: 'No stream URL found in response' };
+          } else {
+            console.log(`[download] OK → ${directUrl}`);
+            payload = {
+              ok:       true,
+              url:      directUrl,
+              language: data?.extracted?.streams?.[0]?.language ?? 'Unknown',
+              quality:  data?.raw?.streams?.[0]?.quality ?? 'auto',
+            };
+          }
+        }
+
+        controller.enqueue(enc.encode(JSON.stringify(payload)));
+
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[download] Fetch failed: ${message}`);
+        controller.enqueue(enc.encode(JSON.stringify({ error: `Failed to reach stream server: ${message}` })));
       } finally {
-        clearTimeout(timer);
+        clearInterval(keepAlive);
+        // Close the JSON array and stream
+        controller.enqueue(enc.encode(']'));
+        controller.close();
       }
+    },
+  });
 
-      if (!upstream.ok) {
-        const body = await upstream.text().catch(() => '');
-        console.error(`[download] Upstream ${upstream.status}: ${body}`);
-        await writer.write(enc.encode(JSON.stringify({ error: `Upstream error ${upstream.status}` })));
-        return;
-      }
-
-      const data = await upstream.json();
-      const directUrl: string | undefined =
-        data?.extracted?.url ??
-        data?.extracted?.streams?.[0]?.url;
-
-      if (!directUrl) {
-        console.error('[download] No URL in response:', JSON.stringify(data));
-        await writer.write(enc.encode(JSON.stringify({ error: 'No stream URL found in response' })));
-        return;
-      }
-
-      console.log(`[download] OK → ${directUrl}`);
-
-      await writer.write(enc.encode(JSON.stringify({
-        ok:       true,
-        url:      directUrl,
-        language: data?.extracted?.streams?.[0]?.language ?? 'Unknown',
-        quality:  data?.raw?.streams?.[0]?.quality ?? 'auto',
-      })));
-
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[download] Fetch failed: ${message}`);
-      await writer.write(enc.encode(JSON.stringify({ error: `Failed to reach stream server: ${message}` }))).catch(() => {});
-    } finally {
-      clearInterval(keepAlive);
-      writer.close().catch(() => {});
-    }
-  })();
-
-  return new Response(readable, {
+  return new Response(stream, {
     status: 200,
     headers: {
-      'Content-Type':  'application/json',
-      'Cache-Control': 'no-store',
-      // Tell Cloudflare not to buffer — stream bytes to client as they arrive
+      'Content-Type':      'application/json',
+      'Cache-Control':     'no-store',
       'X-Accel-Buffering': 'no',
     },
   });

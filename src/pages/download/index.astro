@@ -218,7 +218,10 @@ async function fetchStream() {
       return;
     }
 
-    const data = await res.json();
+    // Response is a JSON array [payload] — the wrapper allows keep-alive
+    // bytes to be sent before the actual payload without breaking JSON.parse.
+    const text = await res.text();
+    const data = JSON.parse(text.trim())[0];
 
     if (data.ok && data.url) {
       streamUrl = data.url;
