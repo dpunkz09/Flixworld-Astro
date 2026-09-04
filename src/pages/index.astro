@@ -6,15 +6,14 @@ import HeroSection from '../components/HeroSection.astro';
 import MediaRow from '../components/MediaRow.astro';
 import SearchBar from '../components/SearchBar.astro';
 import ContinueWatching from '../components/ContinueWatching.astro';
+import NetflixTop10 from '../components/NetflixTop10.astro';
 import {
   getCarouselItems,
   getTrendingMovies,
   getTrendingTV,
-  getPopularMovies,
   getTopRatedMovies,
-  getPopularTV,
   getTopRatedTV,
-  getNowPlayingMovies,
+  getNetflixTop10,
 } from '../lib/tmdb';
 
 // Fetch all data concurrently for performance
@@ -22,20 +21,16 @@ const [
   carouselItems,
   trendingMovies,
   trendingTV,
-  popularMovies,
   topRatedMovies,
-  popularTV,
   topRatedTV,
-  nowPlaying,
+  netflixTop10,
 ] = await Promise.all([
   getCarouselItems(),
   getTrendingMovies('week'),
   getTrendingTV('week'),
-  getPopularMovies(),
   getTopRatedMovies(),
-  getPopularTV(),
   getTopRatedTV(),
-  getNowPlayingMovies(),
+  getNetflixTop10(),
 ]);
 
 // Hero: use Supabase-curated carousel; fall back to trending mix if empty
@@ -66,28 +61,15 @@ const heroItems = carouselItems.length > 0
   <!-- Continue Watching (hidden until localStorage has entries) -->
   <ContinueWatching />
 
+  <!-- Netflix Top 10 Today -->
+  <NetflixTop10 items={netflixTop10} />
+
   <!-- Trending Movies -->
   <MediaRow
     title="Trending Movies"
     items={trendingMovies.results.slice(0, 20)}
     type="movie"
     viewAllHref="/movies"
-  />
-
-  <!-- Now Playing -->
-  <MediaRow
-    title="Now Playing"
-    items={nowPlaying.results.slice(0, 20)}
-    type="movie"
-    viewAllHref="/movies"
-  />
-
-  <!-- Popular TV -->
-  <MediaRow
-    title="Popular TV Shows"
-    items={popularTV.results.slice(0, 20)}
-    type="tv"
-    viewAllHref="/tv"
   />
 
   <!-- Top Rated Movies -->
@@ -112,14 +94,6 @@ const heroItems = carouselItems.length > 0
     items={topRatedTV.results.slice(0, 20)}
     type="tv"
     viewAllHref="/tv"
-  />
-
-  <!-- Popular Movies -->
-  <MediaRow
-    title="Popular Movies"
-    items={popularMovies.results.slice(0, 20)}
-    type="movie"
-    viewAllHref="/movies"
   />
 
   <!-- TMDB attribution -->

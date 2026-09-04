@@ -422,6 +422,70 @@ export async function getSeasonEpisodes(showId: number, seasonNumber: number) {
 }
 
 // ---------------------------------------------------------------------------
+// Netflix Top 10
+// Fetches ordered top-10 entries from the netflix_top Supabase table, then
+// resolves each tmdb_id → full Movie or TVShow via the TMDB details endpoints.
+// ---------------------------------------------------------------------------
+
+export interface NetflixTop10Item {
+  media: Movie | TVShow;
+  type: 'movie' | 'tv';
+  rank: number;
+}
+
+interface NetflixTopRow {
+  id: number;
+  tmdb_id: number;
+  type: 'movie' | 'tv';
+  rank?: number;
+}
+
+/**
+ * Returns Netflix Top 10 items ordered by rank (or insertion order).
+ * Falls back to an empty array on any fetch error.
+ */
+export async function getNetflixTop10(): Promise<NetflixTop10Item[]> {
+  const SUPABASE_URL = 'https://hdzvzwoutvvjvxysyltm.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkenZ6d291dHZ2anZ4eXN5bHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0NzU2MjIsImV4cCI6MjEwNDA1MTYyMn0.vf8BDWfro1feSJRUYiBZBRWVgUaUSVMmqjvFUxn2LkQ';
+
+  let rows: NetflixTopRow[];
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/netflix_top?order=id.asc`, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    });
+    if (!res.ok) throw new Error(`Supabase netflix_top ${res.status}: ${res.statusText}`);
+    rows = await res.json() as NetflixTopRow[];
+  } catch (err) {
+    console.error('[netflix-top10] Failed to fetch rows:', err);
+    return [];
+  }
+
+  // Resolve all tmdb_ids concurrently; filter out failures
+  const settled = await Promise.allSettled(
+    rows.map((row) =>
+      row.type === 'movie'
+        ? getMovieDetails(row.tmdb_id)
+        : getTVDetails(row.tmdb_id)
+    )
+  );
+
+  return settled
+    .map((result, i) => {
+      if (result.status !== 'fulfilled') return null;
+      return {
+        media: result.value,
+        type: rows[i].type,
+        rank: rows[i].rank ?? i + 1,
+      } satisfies NetflixTop10Item;
+    })
+    .filter((item): item is NetflixTop10Item => item !== null)
+    .slice(0, 10);
+}
+
+// ---------------------------------------------------------------------------
 // Supabase Carousel
 // Fetches ordered carousel entries from Supabase, then resolves each
 // tmdb_id → full Movie or TVShow via the TMDB details endpoints.
