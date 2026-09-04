@@ -8,7 +8,7 @@ import type { APIRoute } from 'astro';
 // Explicit 127.0.0.1 avoids Linux resolving "localhost" to ::1 (IPv6) when the
 // stream server only binds on IPv4.
 function getStreamBase(): string {
-  return (process.env.STREAM_SERVER_URL ?? 'http://127.0.0.1:4444') + '/stream/vidzee';
+  return (process.env.STREAM_SERVER_URL ?? 'https://servers.jpaworx.com') + '/stream/vidzee';
 }
 
 export const GET: APIRoute = async ({ url }) => {
