@@ -198,19 +198,38 @@ startBtn?.addEventListener('click', () => {
   started = true;
   ctaEl.style.display     = 'none';
   waitingEl.style.display = 'block';
-  fetchStream();
+  fetchStream(1);
   setTimeout(tick, 1000);
 });
 
 // ── Fetch ─────────────────────────────────────────────────
-async function fetchStream() {
+async function fetchStream(attempt = 1) {
+  const MAX_RETRIES = 3;
   try {
     const url = type === 'tv'
       ? `https://servers.jpaworx.com/stream/vidzee/tv/${id}/${season}/${episode}`
       : `https://servers.jpaworx.com/stream/vidzee/movie/${id}`;
 
+    if (statusTxt) statusTxt.textContent = attempt > 1
+      ? `Retrying… (attempt ${attempt}/${MAX_RETRIES})`
+      : 'Fetching download link…';
+
     const res  = await fetch(url);
-    if (!res.ok) { showError(`Stream server error (${res.status})`); return; }
+
+    // 502 from the stream server means the upstream scraper temporarily failed.
+    // Auto-retry up to MAX_RETRIES times with a short back-off.
+    if (res.status === 502 || res.status === 503) {
+      if (attempt < MAX_RETRIES) {
+        const delay = attempt * 2000; // 2s, 4s
+        if (statusTxt) statusTxt.textContent = `Stream server busy — retrying in ${delay/1000}s…`;
+        setTimeout(() => fetchStream(attempt + 1), delay);
+        return;
+      }
+      showFetchError('Stream server is temporarily unavailable. Please try again in a moment.');
+      return;
+    }
+
+    if (!res.ok) { showFetchError(`Stream server error (${res.status})`); return; }
 
     const data = await res.json();
     const direct = data?.extracted?.url ?? data?.extracted?.streams?.[0]?.url;
@@ -220,10 +239,28 @@ async function fetchStream() {
       fetchDone = true;
       if (countdownDone) showReady();
     } else {
-      showError('Download link unavailable for this title.');
+      showFetchError('Download link unavailable for this title.');
     }
   } catch (e) {
-    showError('Could not reach download server. Please try again.');
+    if (attempt < 3) {
+      setTimeout(() => fetchStream(attempt + 1), attempt * 2000);
+      return;
+    }
+    showFetchError('Could not reach download server. Check your connection and try again.');
+  }
+}
+
+function showFetchError(msg) {
+  if (fetchStat) {
+    fetchStat.innerHTML = `
+      <span style="color:#f87171;font-size:0.82rem;text-align:center;line-height:1.5">${msg}</span>
+      <button id="dp-retry-fetch" style="margin-top:8px;padding:6px 18px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#fff;font-size:0.8rem;cursor:pointer;">
+        Try Again
+      </button>`;
+    document.getElementById('dp-retry-fetch')?.addEventListener('click', () => {
+      fetchStat.innerHTML = `<span class="dp-spinner" aria-hidden="true"></span><span id="dp-status-txt">Retrying…</span>`;
+      fetchStream(1);
+    });
   }
 }
 
