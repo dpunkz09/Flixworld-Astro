@@ -270,14 +270,127 @@ async function startDownload() {
   const progPct   = $('dp-prog-pct');
   const progDetail= $('dp-prog-detail');
   const progSpeed = $('dp-prog-speed');
+  const resumeEl  = $('dp-resume-hint');
 
   if (progEl) progEl.style.display = 'flex';
 
   const filename = new URL(streamUrl).pathname.split('/').pop() ?? 'download.mkv';
+  const RESUME_KEY = `fw:dl:${filename}`;
 
   const fmtBytes = b => b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB';
   const fmtSpeed = b => b <= 0 ? '' : b < 1048576 ? (b/1024).toFixed(0)+' KB/s' : (b/1048576).toFixed(1)+' MB/s';
 
+  // ── Try File System Access API (resumable, writes to disk) ──
+  const canResume = 'showSaveFilePicker' in window;
+
+  if (canResume) {
+    await downloadResumable({ filename, RESUME_KEY, progFill, progPct, progDetail, progSpeed, resumeEl, fmtBytes, fmtSpeed });
+  } else {
+    // Fallback: blob in memory (not resumable)
+    await downloadBlob({ filename, progFill, progPct, progDetail, progSpeed, fmtBytes, fmtSpeed });
+  }
+}
+
+// ── Resumable download via File System Access API ─────────
+async function downloadResumable({ filename, RESUME_KEY, progFill, progPct, progDetail, progSpeed, resumeEl, fmtBytes, fmtSpeed }) {
+  try {
+    // Ask user to pick save location
+    const fileHandle = await window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [{ description: 'Video file', accept: { 'video/*': ['.mkv', '.mp4'] } }],
+    });
+
+    // Check if there's a saved offset from a previous interrupted download
+    let startByte = 0;
+    try {
+      const saved = JSON.parse(localStorage.getItem(RESUME_KEY) ?? 'null');
+      if (saved?.filename === filename && saved?.bytes > 0) {
+        const confirmResume = confirm(
+          `A previous download of "${filename}" was interrupted at ${fmtBytes(saved.bytes)}.\n\nResume from where it left off?`
+        );
+        if (confirmResume) startByte = saved.bytes;
+      }
+    } catch {}
+
+    const headers = startByte > 0 ? { Range: `bytes=${startByte}-` } : {};
+    const res = await fetch(streamUrl, { headers });
+
+    if (!res.ok && res.status !== 206) {
+      throw new Error(`Server error ${res.status}`);
+    }
+
+    const total    = parseInt(res.headers.get('content-length') ?? '0', 10) + startByte;
+    const reader   = res.body.getReader();
+    const writable = await fileHandle.createWritable({ keepExistingData: startByte > 0 });
+
+    // Seek to resume position if continuing
+    if (startByte > 0) await writable.seek(startByte);
+
+    let received   = startByte;
+    let speedBytes = 0, speedStr = '';
+    const speedTimer = setInterval(() => { speedStr = fmtSpeed(speedBytes); speedBytes = 0; }, 1000);
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        await writable.write(value);
+        received   += value.length;
+        speedBytes += value.length;
+
+        // Persist progress so we can resume if interrupted
+        localStorage.setItem(RESUME_KEY, JSON.stringify({ filename, bytes: received }));
+
+        if (total > startByte) {
+          const pct = Math.round(received / total * 100);
+          if (progFill)   progFill.style.width   = `${pct}%`;
+          if (progPct)    progPct.textContent     = `${pct}%`;
+          if (progDetail) progDetail.textContent  = `${fmtBytes(received)} / ${fmtBytes(total)}`;
+        } else {
+          if (progFill)   progFill.classList.add('dp-progress__fill--indeterminate');
+          if (progDetail) progDetail.textContent  = fmtBytes(received);
+        }
+        if (progSpeed) progSpeed.textContent = speedStr;
+      }
+
+      clearInterval(speedTimer);
+      await writable.close();
+
+      // Clean up saved offset — download complete
+      localStorage.removeItem(RESUME_KEY);
+
+      if (progFill)   progFill.style.width   = '100%';
+      if (progPct)    progPct.textContent    = '100%';
+      if (progDetail) progDetail.textContent = 'Complete — file saved!';
+      if (progSpeed)  progSpeed.textContent  = '';
+      dlBtn.innerHTML = '✓ Download complete';
+
+    } catch (err) {
+      clearInterval(speedTimer);
+      await writable.close().catch(() => {});
+      // Don't remove RESUME_KEY — user can resume next time
+      throw err;
+    }
+
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      // User cancelled the file picker — not an error
+      dlBtn.disabled = false;
+      dlBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Now`;
+      const prog = $('dp-progress');
+      if (prog) prog.style.display = 'none';
+      dlBtn?.addEventListener('click', startDownload, { once: true });
+      return;
+    }
+    console.error('[download]', err);
+    // Save offset is already stored — user can retry and resume
+    showError(`Download interrupted. Refresh and try again to resume. (${err.message})`);
+  }
+}
+
+// ── Fallback: in-memory blob (no resume support) ──────────
+async function downloadBlob({ filename, progFill, progPct, progDetail, progSpeed, fmtBytes, fmtSpeed }) {
   try {
     const res   = await fetch(streamUrl);
     const total = parseInt(res.headers.get('content-length') ?? '0', 10);
@@ -285,10 +398,7 @@ async function startDownload() {
     const chunks= [];
     let received= 0, speedBytes = 0, speedStr = '';
 
-    const speedTimer = setInterval(() => {
-      speedStr   = fmtSpeed(speedBytes);
-      speedBytes = 0;
-    }, 1000);
+    const speedTimer = setInterval(() => { speedStr = fmtSpeed(speedBytes); speedBytes = 0; }, 1000);
 
     while (true) {
       const { done, value } = await reader.read();
@@ -311,27 +421,25 @@ async function startDownload() {
 
     clearInterval(speedTimer);
 
-    // Trigger OS save dialog
     const blob    = new Blob(chunks);
     const blobUrl = URL.createObjectURL(blob);
     const a       = document.createElement('a');
-    a.href     = blobUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = blobUrl; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(blobUrl), 15_000);
 
     if (progFill)   progFill.style.width   = '100%';
     if (progPct)    progPct.textContent    = '100%';
-    if (progDetail) progDetail.textContent = 'Complete — saving…';
+    if (progDetail) progDetail.textContent = 'Complete — saving file…';
     if (progSpeed)  progSpeed.textContent  = '';
     dlBtn.innerHTML = '✓ Download complete';
 
   } catch (err) {
+    console.error('[download]', err);
     dlBtn.disabled = false;
     dlBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Now`;
-    if (progEl) progEl.style.display = 'none';
+    const prog = $('dp-progress');
+    if (prog) prog.style.display = 'none';
     showError('Download failed. Please try again.');
     dlBtn?.addEventListener('click', startDownload, { once: true });
   }
