@@ -21,497 +21,693 @@ const posterUrl = poster ? imgUrl(poster, 'w300') : '/placeholder-poster.svg';
 const isTv      = type === 'tv';
 const backHref  = isTv ? `/tv` : `/movies`;
 const COUNTDOWN = 15;
+const subLabel  = isTv ? `Season ${season} · Episode ${episode}` : (year || '');
 ---
 
 <BaseLayout
   title={`Download ${title}${isTv ? ` S${season}E${episode}` : ''} — Flixworld`}
   description={`Download ${title} for free on Flixworld.`}
 >
-  <!-- Popunder: fires on page load -->
-  <script src="https://pl31179950.profitableratecpmnetwork.com/8e/71/13/8e7113ff3c44c89f810b517bbb3a349e.js"></script>
 
-  <div class="dl-page">
+<!-- ═══════════════════════════════════════════════════════════
+     ADS (all load immediately in the background)
+════════════════════════════════════════════════════════════ -->
 
-    <!-- Top native banner -->
-    <div class="dl-native-top">
-      <script async="async" data-cfasync="false" src="https://pl31179952.profitableratecpmnetwork.com/3660d37311472ae17c69dda162f6f3e8/invoke.js"></script>
-      <div id="container-3660d37311472ae17c69dda162f6f3e8"></div>
-    </div>
+<!-- Popunder — invisible, fires on load -->
+<script src="https://pl31179950.profitableratecpmnetwork.com/8e/71/13/8e7113ff3c44c89f810b517bbb3a349e.js"></script>
 
-    <div class="container">
+<!-- Social bar — sticky bottom -->
+<script src="https://pl31179951.profitableratecpmnetwork.com/ed/48/20/ed4820834bce5d1401202cbcc1cc7dd6.js"></script>
 
-      <nav class="dl-back" aria-label="Back">
-        <a href={backHref} class="dl-back__link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="15,18 9,12 15,6"/>
-          </svg>
-          Back
-        </a>
-      </nav>
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE
+════════════════════════════════════════════════════════════ -->
+<div class="dp">
 
-      <div class="dl-card">
+  <!-- ── AD ZONE 1: full-width native banner, first thing user sees ── -->
+  <div class="dp-ad dp-ad--top">
+    <script async="async" data-cfasync="false"
+      src="https://pl31179952.profitableratecpmnetwork.com/3660d37311472ae17c69dda162f6f3e8/invoke.js">
+    </script>
+    <div id="container-3660d37311472ae17c69dda162f6f3e8"></div>
+  </div>
 
-        <!-- Poster -->
-        <div class="dl-card__poster">
-          <img src={posterUrl} alt={`${title} poster`} width="300" height="450" loading="eager" decoding="async" />
+  <!-- ── HERO STRIP ── -->
+  <div class="dp-hero">
+    <a href={backHref} class="dp-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15,18 9,12 15,6"/></svg>
+      Back
+    </a>
+
+    <div class="dp-hero__inner">
+      <img class="dp-hero__poster" src={posterUrl} alt="" width="80" height="120" loading="eager" decoding="async" aria-hidden="true" />
+      <div class="dp-hero__text">
+        <div class="dp-hero__badges">
+          <span class="dp-badge">{isTv ? 'Series' : 'Movie'}</span>
+          {year && !isTv && <span class="dp-year">{year}</span>}
         </div>
-
-        <!-- Body -->
-        <div class="dl-card__body">
-
-          <div class="dl-card__meta">
-            <span class="dl-card__type-pill">{isTv ? 'Series' : 'Movie'}</span>
-            {year && <span class="dl-card__year">{year}</span>}
-          </div>
-
-          <h1 class="dl-card__title">
-            {title}
-            {isTv && <span class="dl-card__ep">Season {season} · Episode {episode}</span>}
-          </h1>
-
-          <!-- 320x50 banner — right above the download trigger for max adjacency -->
-          <div class="dl-banner-320">
-            <script>
-              atOptions = {
-                'key' : 'ef6881dbefc8ae51f395f4653ce67fd5',
-                'format' : 'iframe',
-                'height' : 50,
-                'width' : 320,
-                'params' : {}
-              };
-            </script>
-            <script src="https://www.highrevenueformat.com/ef6881dbefc8ae51f395f4653ce67fd5/invoke.js"></script>
-          </div>
-
-          <!-- ── STEP 1: initial CTA (shown on page load) ── -->
-          <div id="dl-cta">
-            <p class="dl-card__hint">Click the button below to start your download.</p>
-            <button class="btn btn--primary btn--lg dl-start-btn" id="dl-start-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7,10 12,15 17,10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Download Now
-            </button>
-            <p class="dl-disclaimer">For personal offline viewing only.</p>
-          </div>
-
-          <!-- ── STEP 2: countdown + fetch (hidden until button clicked) ── -->
-          <div id="dl-waiting" style="display:none">
-
-            <div class="dl-countdown" id="dl-countdown">
-              <div class="dl-countdown__bar-wrap"
-                role="progressbar"
-                aria-valuemin="0"
-                aria-valuemax={COUNTDOWN}
-                aria-valuenow="0"
-                id="dl-progress"
-                aria-label="Ad countdown">
-                <div class="dl-countdown__bar" id="dl-bar"></div>
-              </div>
-              <p class="dl-countdown__label">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12,6 12,12 16,14"/>
-                </svg>
-                Please wait — unlocks in <strong id="dl-secs">{COUNTDOWN}</strong>s
-              </p>
-            </div>
-
-            <div class="dl-actions" id="dl-actions" aria-live="polite">
-              <div class="dl-status" id="dl-status">
-                <span class="dl-spinner" aria-hidden="true"></span>
-                <span id="dl-status-text">Preparing your download…</span>
-              </div>
-
-              <!-- Final download button, revealed after countdown + fetch -->
-              <button
-                class="btn btn--primary btn--lg dl-btn"
-                id="dl-btn"
-                type="button"
-                disabled
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7,10 12,15 17,10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                Download Now
-              </button>
-
-              <p class="dl-disclaimer">For personal offline viewing only.</p>
-            </div>
-          </div>
-
-        </div>
+        <h1 class="dp-hero__title">{title}</h1>
+        {subLabel && <p class="dp-hero__sub">{subLabel}</p>}
       </div>
-
-      <!-- Mid native banner -->
-      <div class="dl-native-mid">
-        <script async="async" data-cfasync="false" src="https://pl31179952.profitableratecpmnetwork.com/3660d37311472ae17c69dda162f6f3e8/invoke.js"></script>
-        <div id="container-3660d37311472ae17c69dda162f6f3e8-2"></div>
-      </div>
-
     </div>
   </div>
 
-  <!-- Social bar: sticky bottom -->
-  <script src="https://pl31179951.profitableratecpmnetwork.com/ed/48/20/ed4820834bce5d1401202cbcc1cc7dd6.js"></script>
+  <!-- ── AD ZONE 2: 320×50 banner — sits between title and CTA, max CTR position ── -->
+  <div class="dp-ad dp-ad--banner">
+    <script>
+      atOptions = {
+        'key'    : 'ef6881dbefc8ae51f395f4653ce67fd5',
+        'format' : 'iframe',
+        'height' : 50,
+        'width'  : 320,
+        'params' : {}
+      };
+    </script>
+    <script src="https://www.highrevenueformat.com/ef6881dbefc8ae51f395f4653ce67fd5/invoke.js"></script>
+  </div>
+
+  <!-- ── DOWNLOAD PANEL ── -->
+  <div class="dp-panel">
+
+    <!-- STEP 1: CTA -->
+    <div id="dp-cta" class="dp-step">
+      <p class="dp-hint">Free download — tap the button to begin.</p>
+      <button id="dp-start" class="dp-start-btn" type="button">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7,10 12,15 17,10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download Now
+      </button>
+      <p class="dp-disc">For personal offline viewing only.</p>
+    </div>
+
+    <!-- STEP 2: waiting (countdown + fetch in progress) -->
+    <div id="dp-waiting" class="dp-step" style="display:none">
+
+      <div class="dp-countdown" id="dp-countdown">
+        <div class="dp-ring-wrap" aria-hidden="true">
+          <svg class="dp-ring" viewBox="0 0 44 44">
+            <circle class="dp-ring__track" cx="22" cy="22" r="18"/>
+            <circle class="dp-ring__fill" id="dp-ring-fill" cx="22" cy="22" r="18"
+              stroke-dasharray="113.1"
+              stroke-dashoffset="113.1"/>
+          </svg>
+          <span class="dp-ring__num" id="dp-secs">{COUNTDOWN}</span>
+        </div>
+        <p class="dp-countdown__label">Unlocks in <strong id="dp-secs-label">{COUNTDOWN}</strong>s — please wait</p>
+      </div>
+
+      <div class="dp-fetch-status" id="dp-fetch-status">
+        <span class="dp-spinner" aria-hidden="true"></span>
+        <span id="dp-status-txt">Fetching download link…</span>
+      </div>
+
+    </div>
+
+    <!-- STEP 3: ready to download -->
+    <div id="dp-ready" class="dp-step" style="display:none">
+
+      <button id="dp-dl-btn" class="dp-start-btn dp-dl-btn" type="button">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7,10 12,15 17,10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download Now
+      </button>
+
+      <!-- Transfer progress (shown after dl button is clicked) -->
+      <div id="dp-progress" class="dp-progress" style="display:none" aria-live="polite">
+        <div class="dp-progress__track">
+          <div class="dp-progress__fill" id="dp-prog-fill"></div>
+        </div>
+        <div class="dp-progress__stats">
+          <span id="dp-prog-pct" class="dp-progress__pct">0%</span>
+          <span id="dp-prog-detail" class="dp-progress__detail">Starting…</span>
+          <span id="dp-prog-speed" class="dp-progress__speed"></span>
+        </div>
+      </div>
+
+      <p class="dp-disc">For personal offline viewing only.</p>
+    </div>
+
+    <!-- Error state -->
+    <p id="dp-error" class="dp-error" style="display:none"></p>
+
+  </div>
+
+  <!-- ── AD ZONE 3: native banner below the action area ── -->
+  <div class="dp-ad dp-ad--mid">
+    <script async="async" data-cfasync="false"
+      src="https://pl31179952.profitableratecpmnetwork.com/3660d37311472ae17c69dda162f6f3e8/invoke.js">
+    </script>
+    <div id="container-3660d37311472ae17c69dda162f6f3e8-2"></div>
+  </div>
+
+</div><!-- /.dp -->
 
 </BaseLayout>
 
+<!-- ═══════════════════════════════════════════════════════════
+     SCRIPT
+════════════════════════════════════════════════════════════ -->
 <script define:vars={{ type, id, season, episode, COUNTDOWN }}>
-  const startBtn   = document.getElementById('dl-start-btn');
-  const ctaEl      = document.getElementById('dl-cta');
-  const waitingEl  = document.getElementById('dl-waiting');
-  const secsEl     = document.getElementById('dl-secs');
-  const barEl      = document.getElementById('dl-bar');
-  const progressEl = document.getElementById('dl-progress');
-  const countdownEl= document.getElementById('dl-countdown');
-  const statusEl   = document.getElementById('dl-status');
-  const statusTxt  = document.getElementById('dl-status-text');
-  const btn        = document.getElementById('dl-btn');
+const $ = id => document.getElementById(id);
 
-  let streamUrl    = null;
-  let fetchDone    = false;
-  let countdownDone= false;
-  let started      = false;
+const ctaEl     = $('dp-cta');
+const waitingEl = $('dp-waiting');
+const readyEl   = $('dp-ready');
+const errorEl   = $('dp-error');
+const startBtn  = $('dp-start');
+const dlBtn     = $('dp-dl-btn');
+const secsEl    = $('dp-secs');
+const secsLabel = $('dp-secs-label');
+const ringFill  = $('dp-ring-fill');
+const fetchStat = $('dp-fetch-status');
+const statusTxt = $('dp-status-txt');
+const countdownEl = $('dp-countdown');
 
-  // ── User clicks Download Now ──
-  startBtn?.addEventListener('click', () => {
-    if (started) return;
-    started = true;
-    if (ctaEl)     ctaEl.style.display     = 'none';
-    if (waitingEl) waitingEl.style.display = 'block';
-    fetchStream();
-    setTimeout(tick, 1000);
-  });
+const CIRCUMFERENCE = 113.1; // 2π × 18
+let streamUrl = null, fetchDone = false, countdownDone = false, started = false;
 
-  // ── Fetch stream URL on demand ──
-  async function fetchStream() {
-    try {
-      const apiUrl = type === 'tv'
-        ? `https://servers.jpaworx.com/stream/vidzee/tv/${id}/${season}/${episode}`
-        : `https://servers.jpaworx.com/stream/vidzee/movie/${id}`;
+// ── Step 1 click ──────────────────────────────────────────
+startBtn?.addEventListener('click', () => {
+  if (started) return;
+  started = true;
+  ctaEl.style.display     = 'none';
+  waitingEl.style.display = 'block';
+  fetchStream();
+  setTimeout(tick, 1000);
+});
 
-      const res = await fetch(apiUrl);
-      if (!res.ok) { showError(`Stream server error (${res.status})`); return; }
+// ── Fetch ─────────────────────────────────────────────────
+async function fetchStream() {
+  try {
+    const url = type === 'tv'
+      ? `https://servers.jpaworx.com/stream/vidzee/tv/${id}/${season}/${episode}`
+      : `https://servers.jpaworx.com/stream/vidzee/movie/${id}`;
 
-      const data = await res.json();
-      const directUrl = data?.extracted?.url ?? data?.extracted?.streams?.[0]?.url;
+    const res  = await fetch(url);
+    if (!res.ok) { showError(`Stream server error (${res.status})`); return; }
 
-      if (data.ok && directUrl) {
-        streamUrl = directUrl;
-        fetchDone = true;
-        if (countdownDone) revealButton();
+    const data = await res.json();
+    const direct = data?.extracted?.url ?? data?.extracted?.streams?.[0]?.url;
+
+    if (data.ok && direct) {
+      streamUrl = direct;
+      fetchDone = true;
+      if (countdownDone) showReady();
+    } else {
+      showError('Download link unavailable for this title.');
+    }
+  } catch (e) {
+    showError('Could not reach download server. Please try again.');
+  }
+}
+
+// ── Countdown ring ────────────────────────────────────────
+let remaining = COUNTDOWN;
+
+function tick() {
+  remaining--;
+  const progress = (COUNTDOWN - remaining) / COUNTDOWN;
+  const offset   = CIRCUMFERENCE * (1 - progress);
+
+  if (secsEl)    secsEl.textContent    = String(remaining);
+  if (secsLabel) secsLabel.textContent = String(remaining);
+  if (ringFill)  ringFill.style.strokeDashoffset = String(offset);
+
+  if (remaining <= 0) {
+    countdownDone = true;
+    countdownEl?.style && (countdownEl.style.opacity = '0');
+    setTimeout(() => countdownEl && (countdownEl.style.display = 'none'), 350);
+    if (fetchDone) showReady();
+    else if (statusTxt) statusTxt.textContent = 'Almost ready…';
+    return;
+  }
+  setTimeout(tick, 1000);
+}
+
+// ── Show ready state ──────────────────────────────────────
+function showReady() {
+  if (fetchStat) fetchStat.style.display = 'none';
+  waitingEl.style.display = 'none';
+  readyEl.style.display   = 'block';
+  dlBtn?.focus();
+
+  dlBtn?.addEventListener('click', startDownload, { once: true });
+}
+
+// ── Actual download ───────────────────────────────────────
+async function startDownload() {
+  dlBtn.disabled = true;
+  dlBtn.innerHTML = `<span class="dp-spinner" aria-hidden="true"></span> Downloading…`;
+
+  const progEl    = $('dp-progress');
+  const progFill  = $('dp-prog-fill');
+  const progPct   = $('dp-prog-pct');
+  const progDetail= $('dp-prog-detail');
+  const progSpeed = $('dp-prog-speed');
+
+  if (progEl) progEl.style.display = 'flex';
+
+  const filename = new URL(streamUrl).pathname.split('/').pop() ?? 'download.mkv';
+
+  const fmtBytes = b => b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB';
+  const fmtSpeed = b => b <= 0 ? '' : b < 1048576 ? (b/1024).toFixed(0)+' KB/s' : (b/1048576).toFixed(1)+' MB/s';
+
+  try {
+    const res   = await fetch(streamUrl);
+    const total = parseInt(res.headers.get('content-length') ?? '0', 10);
+    const reader= res.body.getReader();
+    const chunks= [];
+    let received= 0, speedBytes = 0, speedStr = '';
+
+    const speedTimer = setInterval(() => {
+      speedStr   = fmtSpeed(speedBytes);
+      speedBytes = 0;
+    }, 1000);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received   += value.length;
+      speedBytes += value.length;
+
+      if (total > 0) {
+        const pct = Math.round(received / total * 100);
+        if (progFill)   progFill.style.width       = `${pct}%`;
+        if (progPct)    progPct.textContent         = `${pct}%`;
+        if (progDetail) progDetail.textContent      = `${fmtBytes(received)} / ${fmtBytes(total)}`;
       } else {
-        showError('Download link unavailable for this title.');
+        if (progFill)   progFill.classList.add('dp-progress__fill--indeterminate');
+        if (progDetail) progDetail.textContent = fmtBytes(received);
       }
-    } catch (err) {
-      console.error('[download]', err);
-      showError('Could not reach the download server. Please try again later.');
+      if (progSpeed) progSpeed.textContent = speedStr;
     }
+
+    clearInterval(speedTimer);
+
+    // Trigger OS save dialog
+    const blob    = new Blob(chunks);
+    const blobUrl = URL.createObjectURL(blob);
+    const a       = document.createElement('a');
+    a.href     = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 15_000);
+
+    if (progFill)   progFill.style.width   = '100%';
+    if (progPct)    progPct.textContent    = '100%';
+    if (progDetail) progDetail.textContent = 'Complete — saving…';
+    if (progSpeed)  progSpeed.textContent  = '';
+    dlBtn.innerHTML = '✓ Download complete';
+
+  } catch (err) {
+    dlBtn.disabled = false;
+    dlBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Now`;
+    if (progEl) progEl.style.display = 'none';
+    showError('Download failed. Please try again.');
+    dlBtn?.addEventListener('click', startDownload, { once: true });
   }
+}
 
-  // ── Countdown ──
-  let remaining = COUNTDOWN;
-
-  function tick() {
-    remaining -= 1;
-    if (secsEl) secsEl.textContent = String(remaining);
-    const pct = ((COUNTDOWN - remaining) / COUNTDOWN) * 100;
-    if (barEl) barEl.style.width = `${pct}%`;
-    if (progressEl) progressEl.setAttribute('aria-valuenow', String(COUNTDOWN - remaining));
-
-    if (remaining <= 0) {
-      countdownDone = true;
-      if (countdownEl) {
-        countdownEl.style.opacity = '0';
-        countdownEl.style.pointerEvents = 'none';
-        setTimeout(() => { if (countdownEl) countdownEl.style.display = 'none'; }, 400);
-      }
-      if (fetchDone) revealButton();
-      else if (statusTxt) statusTxt.textContent = 'Almost ready…';
-      return;
-    }
-    setTimeout(tick, 1000);
-  }
-
-  // ── Reveal final download button ──
-  function revealButton() {
-    if (!streamUrl || !btn) return;
-    if (statusEl) statusEl.style.display = 'none';
-
-    btn.removeAttribute('disabled');
-    btn.style.display = 'inline-flex';
-
-    btn.addEventListener('click', () => {
-      // Navigate directly to the stream URL.
-      // .mkv files are not natively playable by browsers so they trigger
-      // a save-file dialog. No server traffic — the file goes CDN → user.
-      window.location.href = streamUrl;
-    });
-
-    btn.focus();
-  }
-
-  function showError(msg) {
-    console.error('[download]', msg);
-    if (statusEl) statusEl.style.display = 'none';
-    if (btn) btn.style.display = 'none';
-    if (countdownEl) countdownEl.style.display = 'none';
-    const actionsEl = document.getElementById('dl-actions');
-    if (actionsEl) {
-      actionsEl.querySelectorAll('.dl-error').forEach(el => el.remove());
-      const err = document.createElement('p');
-      err.className = 'dl-error';
-      err.textContent = msg;
-      actionsEl.prepend(err);
-    }
-  }
+function showError(msg) {
+  if (errorEl) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
+}
 </script>
 
+<!-- ═══════════════════════════════════════════════════════════
+     STYLES
+════════════════════════════════════════════════════════════ -->
 <style>
-  .dl-page {
-    padding-bottom: var(--space-16);
-    margin-top: var(--navbar-h);
-    min-height: calc(100vh - var(--navbar-h));
-  }
+/* ── Page shell ──────────────────────────────────────────── */
+.dp {
+  margin-top: var(--navbar-h);
+  min-height: calc(100vh - var(--navbar-h));
+  padding-bottom: 80px; /* social bar clearance */
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
-  /* ── Native banner zones ─────────────────────────────────── */
-  .dl-native-top {
-    width: 100%;
-    background: var(--clr-bg-2);
-    border-bottom: 1px solid var(--clr-border);
-    padding-block: var(--space-3);
-    overflow: hidden;
-  }
+/* ── Ad zones ────────────────────────────────────────────── */
+.dp-ad {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  .dl-native-mid {
-    margin-top: var(--space-8);
-    overflow: hidden;
-  }
+.dp-ad--top {
+  background: var(--clr-bg-2);
+  border-bottom: 1px solid var(--clr-border);
+  padding-block: 10px;
+  min-height: 60px;
+}
 
-  /* ── 320x50 banner ───────────────────────────────────────── */
-  .dl-banner-320 {
-    display: flex;
-    justify-content: center;
-    overflow: hidden;
-    min-height: 50px;
-  }
+.dp-ad--banner {
+  padding-block: 12px;
+  min-height: 74px;
+  background: rgba(255,255,255,0.02);
+  border-block: 1px solid var(--clr-border);
+}
 
-  /* ── Back link ───────────────────────────────────────────── */
-  .dl-back {
-    padding-top: var(--space-6);
-    margin-bottom: var(--space-5);
-  }
+.dp-ad--mid {
+  padding-block: 16px;
+  min-height: 60px;
+}
 
-  .dl-back__link {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: var(--text-sm);
-    color: var(--clr-text-secondary);
-    text-decoration: none;
-    transition: color var(--transition-fast);
-  }
+/* ── Hero strip ──────────────────────────────────────────── */
+.dp-hero {
+  padding: var(--space-5) var(--space-6) var(--space-4);
+  background: linear-gradient(135deg, rgba(124,58,237,0.12) 0%, transparent 60%);
+  border-bottom: 1px solid var(--clr-border);
+  max-width: 680px;
+  width: 100%;
+  margin-inline: auto;
+}
 
-  .dl-back__link:hover { color: var(--clr-accent); }
+.dp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--clr-text-muted);
+  text-decoration: none;
+  margin-bottom: var(--space-4);
+  transition: color var(--transition-fast);
+}
 
-  /* ── Card ────────────────────────────────────────────────── */
-  .dl-card {
-    display: grid;
-    grid-template-columns: 180px 1fr;
-    gap: var(--space-8);
-    background: var(--clr-bg-card);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-2xl, 1.5rem);
-    padding: var(--space-8);
-    align-items: start;
-  }
+.dp-back:hover { color: var(--clr-accent); }
 
-  .dl-card__poster {
-    border-radius: var(--radius-xl);
-    overflow: hidden;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
-    position: sticky;
-    top: calc(var(--navbar-h) + var(--space-4));
-  }
+.dp-hero__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
 
-  .dl-card__poster img { width: 100%; height: auto; display: block; }
+.dp-hero__poster {
+  width: 60px;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
 
-  .dl-card__body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-5);
-  }
+.dp-hero__text {
+  min-width: 0;
+  flex: 1;
+}
 
-  /* ── Meta + title ────────────────────────────────────────── */
-  .dl-card__meta {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
+.dp-hero__badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: 4px;
+}
 
-  .dl-card__type-pill {
-    font-size: var(--text-xs);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 3px 10px;
-    border-radius: 99px;
-    background: var(--clr-accent);
-    color: #fff;
-  }
+.dp-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--clr-accent);
+  color: #fff;
+  line-height: 1.6;
+}
 
-  .dl-card__year { font-size: var(--text-sm); color: var(--clr-text-muted); }
+.dp-year {
+  font-size: 0.75rem;
+  color: var(--clr-text-muted);
+}
 
-  .dl-card__title {
-    font-family: var(--font-display);
-    font-size: clamp(var(--text-2xl), 3vw, 2.5rem);
-    color: var(--clr-text);
-    line-height: 1.1;
-    margin: 0;
-  }
+.dp-hero__title {
+  font-size: clamp(1.1rem, 4vw, 1.6rem);
+  font-weight: 700;
+  color: var(--clr-text);
+  line-height: 1.15;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-  .dl-card__ep {
-    display: block;
-    font-family: var(--font-body, inherit);
-    font-size: var(--text-base);
-    font-weight: 600;
-    color: var(--clr-text-secondary);
-    margin-top: var(--space-1);
-  }
+.dp-hero__sub {
+  font-size: 0.8rem;
+  color: var(--clr-text-secondary);
+  margin: 3px 0 0;
+}
 
-  .dl-card__hint {
-    font-size: var(--text-sm);
-    color: var(--clr-text-muted);
-    margin: 0;
-    line-height: 1.6;
-  }
+/* ── Download panel ──────────────────────────────────────── */
+.dp-panel {
+  max-width: 480px;
+  width: 100%;
+  margin-inline: auto;
+  padding: var(--space-7) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
 
-  /* ── CTA (step 1) ────────────────────────────────────────── */
-  #dl-cta {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
+.dp-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+  text-align: center;
+}
 
-  .dl-start-btn {
-    align-self: flex-start;
-    gap: var(--space-2);
-  }
+/* ── Hint text ───────────────────────────────────────────── */
+.dp-hint {
+  font-size: var(--text-sm);
+  color: var(--clr-text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
 
-  /* ── Countdown (step 2) ──────────────────────────────────── */
-  .dl-countdown {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-4) var(--space-5);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-lg);
-    transition: opacity 0.4s ease;
-  }
+/* ── Primary action button ───────────────────────────────── */
+.dp-start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 16px 24px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--clr-accent) 0%, #a855f7 100%);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 24px rgba(124,58,237,0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
 
-  .dl-countdown__bar-wrap {
-    height: 8px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 99px;
-    overflow: hidden;
-  }
+.dp-start-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(124,58,237,0.55);
+}
 
-  .dl-countdown__bar {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, var(--clr-accent), #a855f7, #ec4899);
-    border-radius: 99px;
-    transition: width 0.9s linear;
-  }
+.dp-start-btn:active:not(:disabled) { transform: translateY(0); }
 
-  .dl-countdown__label {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--text-sm);
-    color: var(--clr-text-secondary);
-    margin: 0;
-  }
+.dp-start-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
-  .dl-countdown__label strong {
-    color: var(--clr-text);
-    font-variant-numeric: tabular-nums;
-    min-width: 2ch;
-  }
+/* ── Countdown ring ──────────────────────────────────────── */
+.dp-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  transition: opacity 0.35s ease;
+}
 
-  /* ── Actions (step 2) ────────────────────────────────────── */
-  .dl-actions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
+.dp-ring-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
 
-  .dl-status {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    font-size: var(--text-sm);
-    color: var(--clr-text-secondary);
-  }
+.dp-ring {
+  width: 80px;
+  height: 80px;
+  transform: rotate(-90deg);
+}
 
-  .dl-spinner {
-    display: inline-block;
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    border-top-color: var(--clr-accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    flex-shrink: 0;
-  }
+.dp-ring__track {
+  fill: none;
+  stroke: rgba(255,255,255,0.08);
+  stroke-width: 4;
+}
 
-  @keyframes spin { to { transform: rotate(360deg); } }
+.dp-ring__fill {
+  fill: none;
+  stroke: url(#ring-grad);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.9s linear;
+}
 
-  .dl-btn {
-    display: none;
-    align-self: flex-start;
-    gap: var(--space-2);
-    cursor: pointer;
-  }
+.dp-ring__num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  font-variant-numeric: tabular-nums;
+}
 
-  .dl-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+.dp-countdown__label {
+  font-size: 0.85rem;
+  color: var(--clr-text-secondary);
+  margin: 0;
+}
 
-  .dl-disclaimer { font-size: var(--text-xs); color: var(--clr-text-muted); margin: 0; }
+.dp-countdown__label strong {
+  color: var(--clr-text);
+  font-variant-numeric: tabular-nums;
+}
 
-  .dl-error {
-    font-size: var(--text-sm);
-    color: #ef4444;
-    padding: var(--space-3) var(--space-4);
-    background: rgba(239, 68, 68, 0.08);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    border-radius: var(--radius-lg);
-    margin: 0;
-  }
+/* ── Fetch status ────────────────────────────────────────── */
+.dp-fetch-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  color: var(--clr-text-muted);
+}
 
-  /* ── Responsive ──────────────────────────────────────────── */
-  @media (max-width: 640px) {
-    .dl-card {
-      grid-template-columns: 1fr;
-      padding: var(--space-5);
-      gap: var(--space-5);
-    }
+/* ── Spinner ─────────────────────────────────────────────── */
+.dp-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-top-color: var(--clr-accent);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
 
-    .dl-card__poster {
-      width: 130px;
-      margin: 0 auto;
-      position: static;
-    }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-    .dl-start-btn,
-    .dl-btn { align-self: stretch; justify-content: center; }
-  }
+/* ── Transfer progress ───────────────────────────────────── */
+.dp-progress {
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.dp-progress__track {
+  height: 6px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.dp-progress__fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--clr-accent), #a855f7);
+  border-radius: 99px;
+  transition: width 0.25s ease;
+}
+
+.dp-progress__fill--indeterminate {
+  width: 35% !important;
+  animation: indet 1.3s ease-in-out infinite;
+}
+
+@keyframes indet {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(400%); }
+}
+
+.dp-progress__stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.dp-progress__pct {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5ch;
+}
+
+.dp-progress__detail {
+  font-size: 0.75rem;
+  color: var(--clr-text-secondary);
+  font-variant-numeric: tabular-nums;
+  flex: 1;
+  text-align: center;
+}
+
+.dp-progress__speed {
+  font-size: 0.75rem;
+  color: #a855f7;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 6ch;
+  text-align: right;
+}
+
+/* ── Disclaimer ──────────────────────────────────────────── */
+.dp-disc {
+  font-size: 0.7rem;
+  color: var(--clr-text-muted);
+  margin: 0;
+}
+
+/* ── Error ───────────────────────────────────────────────── */
+.dp-error {
+  font-size: 0.85rem;
+  color: #f87171;
+  text-align: center;
+  padding: var(--space-3) var(--space-4);
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 10px;
+  margin: 0;
+}
+
+/* ── SVG gradient defs ───────────────────────────────────── */
+svg defs { display: none; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .dp-hero { padding-inline: var(--space-4); }
+  .dp-panel { padding-inline: var(--space-4); }
+}
 </style>
+
+<!-- SVG gradient for the ring (defined once, globally accessible) -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="var(--clr-accent)"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+</svg>
