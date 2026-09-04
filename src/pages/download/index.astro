@@ -157,29 +157,34 @@ const COUNTDOWN = 15;
   let fetchDone    = false;
   let countdownDone= false;
 
-  // ── 1. Fetch stream URL immediately ──
+  // ── 1. Fetch stream URL directly from the public stream server ──
+  // servers.jpaworx.com is public HTTPS — no proxy needed.
+  // Calling it client-side avoids Cloudflare's origin timeout on /api/download.
   async function fetchStream() {
     try {
-      const qs = new URLSearchParams({ type, id });
-      if (type === 'tv') { qs.set('season', season); qs.set('episode', episode); }
+      let apiUrl;
+      if (type === 'tv') {
+        apiUrl = `https://servers.jpaworx.com/stream/vidzee/tv/${id}/${season}/${episode}`;
+      } else {
+        apiUrl = `https://servers.jpaworx.com/stream/vidzee/movie/${id}`;
+      }
 
-      const res = await fetch(`/api/download?${qs}`);
+      const res = await fetch(apiUrl);
 
       if (!res.ok) {
-        let msg = `Server error (${res.status})`;
-        try { const e = await res.json(); msg = e.error ?? msg; } catch {}
-        showError(msg);
+        showError(`Stream server error (${res.status})`);
         return;
       }
 
       const data = await res.json();
+      const directUrl = data?.extracted?.url ?? data?.extracted?.streams?.[0]?.url;
 
-      if (data.ok && data.url) {
-        streamUrl = data.url;
+      if (data.ok && directUrl) {
+        streamUrl = directUrl;
         fetchDone = true;
         if (countdownDone) revealButton();
       } else {
-        showError(data.error ?? 'Download link unavailable.');
+        showError('Download link unavailable for this title.');
       }
     } catch (err) {
       console.error('[download]', err);
