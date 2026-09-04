@@ -27,12 +27,12 @@ const COUNTDOWN = 15;
   title={`Download ${title}${isTv ? ` S${season}E${episode}` : ''} — Flixworld`}
   description={`Download ${title} for free on Flixworld.`}
 >
-  <!-- ── Popunder: fires on page load, invisible ── -->
+  <!-- Popunder: fires on page load -->
   <script src="https://pl31179950.profitableratecpmnetwork.com/8e/71/13/8e7113ff3c44c89f810b517bbb3a349e.js"></script>
 
   <div class="dl-page">
 
-    <!-- ── Top native banner (full width, high visibility) ── -->
+    <!-- Top native banner -->
     <div class="dl-native-top">
       <script async="async" data-cfasync="false" src="https://pl31179952.profitableratecpmnetwork.com/3660d37311472ae17c69dda162f6f3e8/invoke.js"></script>
       <div id="container-3660d37311472ae17c69dda162f6f3e8"></div>
@@ -40,7 +40,6 @@ const COUNTDOWN = 15;
 
     <div class="container">
 
-      <!-- Back link -->
       <nav class="dl-back" aria-label="Back">
         <a href={backHref} class="dl-back__link">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -50,19 +49,11 @@ const COUNTDOWN = 15;
         </a>
       </nav>
 
-      <!-- ── Main card: horizontal on desktop ── -->
       <div class="dl-card">
 
         <!-- Poster -->
         <div class="dl-card__poster">
-          <img
-            src={posterUrl}
-            alt={`${title} poster`}
-            width="300"
-            height="450"
-            loading="eager"
-            decoding="async"
-          />
+          <img src={posterUrl} alt={`${title} poster`} width="300" height="450" loading="eager" decoding="async" />
         </div>
 
         <!-- Body -->
@@ -78,59 +69,88 @@ const COUNTDOWN = 15;
             {isTv && <span class="dl-card__ep">Season {season} · Episode {episode}</span>}
           </h1>
 
-          <p class="dl-card__hint">Your download will be ready after a short wait. Please keep this page open.</p>
-
-          <!-- ── Countdown ── -->
-          <div class="dl-countdown" id="dl-countdown">
-            <div class="dl-countdown__bar-wrap"
-              role="progressbar"
-              aria-valuemin="0"
-              aria-valuemax={COUNTDOWN}
-              aria-valuenow="0"
-              id="dl-progress"
-              aria-label="Ad countdown">
-              <div class="dl-countdown__bar" id="dl-bar"></div>
-            </div>
-            <p class="dl-countdown__label">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12,6 12,12 16,14"/>
-              </svg>
-              Download unlocks in <strong id="dl-secs">{COUNTDOWN}</strong>s
-            </p>
+          <!-- 320x50 banner — right above the download trigger for max adjacency -->
+          <div class="dl-banner-320">
+            <script>
+              atOptions = {
+                'key' : 'ef6881dbefc8ae51f395f4653ce67fd5',
+                'format' : 'iframe',
+                'height' : 50,
+                'width' : 320,
+                'params' : {}
+              };
+            </script>
+            <script src="https://www.highrevenueformat.com/ef6881dbefc8ae51f395f4653ce67fd5/invoke.js"></script>
           </div>
 
-          <!-- ── Actions ── -->
-          <div class="dl-actions" id="dl-actions" aria-live="polite">
-            <div class="dl-status" id="dl-status">
-              <span class="dl-spinner" aria-hidden="true"></span>
-              <span id="dl-status-text">Preparing your download…</span>
-            </div>
-
-            <a
-              href="#"
-              class="btn btn--primary btn--lg dl-btn"
-              id="dl-btn"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-disabled="true"
-              tabindex="-1"
-            >
+          <!-- ── STEP 1: initial CTA (shown on page load) ── -->
+          <div id="dl-cta">
+            <p class="dl-card__hint">Click the button below to start your download.</p>
+            <button class="btn btn--primary btn--lg dl-start-btn" id="dl-start-btn">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7,10 12,15 17,10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
               Download Now
-            </a>
-
+            </button>
             <p class="dl-disclaimer">For personal offline viewing only.</p>
+          </div>
+
+          <!-- ── STEP 2: countdown + fetch (hidden until button clicked) ── -->
+          <div id="dl-waiting" style="display:none">
+
+            <div class="dl-countdown" id="dl-countdown">
+              <div class="dl-countdown__bar-wrap"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax={COUNTDOWN}
+                aria-valuenow="0"
+                id="dl-progress"
+                aria-label="Ad countdown">
+                <div class="dl-countdown__bar" id="dl-bar"></div>
+              </div>
+              <p class="dl-countdown__label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12,6 12,12 16,14"/>
+                </svg>
+                Please wait — unlocks in <strong id="dl-secs">{COUNTDOWN}</strong>s
+              </p>
+            </div>
+
+            <div class="dl-actions" id="dl-actions" aria-live="polite">
+              <div class="dl-status" id="dl-status">
+                <span class="dl-spinner" aria-hidden="true"></span>
+                <span id="dl-status-text">Preparing your download…</span>
+              </div>
+
+              <!-- Final download link, revealed after countdown + fetch -->
+              <a
+                href="#"
+                class="btn btn--primary btn--lg dl-btn"
+                id="dl-btn"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-disabled="true"
+                tabindex="-1"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7,10 12,15 17,10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download Now
+              </a>
+
+              <p class="dl-disclaimer">For personal offline viewing only.</p>
+            </div>
           </div>
 
         </div>
       </div>
 
-      <!-- ── Native banner between card and footer ── -->
+      <!-- Mid native banner -->
       <div class="dl-native-mid">
         <script async="async" data-cfasync="false" src="https://pl31179952.profitableratecpmnetwork.com/3660d37311472ae17c69dda162f6f3e8/invoke.js"></script>
         <div id="container-3660d37311472ae17c69dda162f6f3e8-2"></div>
@@ -139,12 +159,15 @@ const COUNTDOWN = 15;
     </div>
   </div>
 
-  <!-- ── Social Bar: sticky bottom ── -->
+  <!-- Social bar: sticky bottom -->
   <script src="https://pl31179951.profitableratecpmnetwork.com/ed/48/20/ed4820834bce5d1401202cbcc1cc7dd6.js"></script>
 
 </BaseLayout>
 
 <script define:vars={{ type, id, season, episode, COUNTDOWN }}>
+  const startBtn   = document.getElementById('dl-start-btn');
+  const ctaEl      = document.getElementById('dl-cta');
+  const waitingEl  = document.getElementById('dl-waiting');
   const secsEl     = document.getElementById('dl-secs');
   const barEl      = document.getElementById('dl-bar');
   const progressEl = document.getElementById('dl-progress');
@@ -156,18 +179,28 @@ const COUNTDOWN = 15;
   let streamUrl    = null;
   let fetchDone    = false;
   let countdownDone= false;
+  let started      = false;
 
-  // ── 1. Fetch stream URL directly from the public stream server ──
-  // servers.jpaworx.com is public HTTPS — no proxy needed.
-  // Calling it client-side avoids Cloudflare's origin timeout on /api/download.
+  // ── User clicks Download Now ──
+  startBtn?.addEventListener('click', () => {
+    if (started) return;
+    started = true;
+
+    // Swap UI: hide CTA, show countdown + status
+    if (ctaEl)     ctaEl.style.display     = 'none';
+    if (waitingEl) waitingEl.style.display = 'block';
+
+    // Kick off both in parallel
+    fetchStream();
+    setTimeout(tick, 1000);
+  });
+
+  // ── Fetch stream URL on demand ──
   async function fetchStream() {
     try {
-      let apiUrl;
-      if (type === 'tv') {
-        apiUrl = `https://servers.jpaworx.com/stream/vidzee/tv/${id}/${season}/${episode}`;
-      } else {
-        apiUrl = `https://servers.jpaworx.com/stream/vidzee/movie/${id}`;
-      }
+      const apiUrl = type === 'tv'
+        ? `https://servers.jpaworx.com/stream/vidzee/tv/${id}/${season}/${episode}`
+        : `https://servers.jpaworx.com/stream/vidzee/movie/${id}`;
 
       const res = await fetch(apiUrl);
 
@@ -192,7 +225,7 @@ const COUNTDOWN = 15;
     }
   }
 
-  // ── 2. Countdown timer ──
+  // ── Countdown ──
   let remaining = COUNTDOWN;
 
   function tick() {
@@ -216,9 +249,7 @@ const COUNTDOWN = 15;
     setTimeout(tick, 1000);
   }
 
-  setTimeout(tick, 1000);
-
-  // ── 3. Reveal button ──
+  // ── Reveal final download button ──
   function revealButton() {
     if (!streamUrl || !btn) return;
     btn.href = streamUrl;
@@ -243,12 +274,9 @@ const COUNTDOWN = 15;
       actionsEl.prepend(err);
     }
   }
-
-  fetchStream();
 </script>
 
 <style>
-  /* ── Page ─────────────────────────────────────────────────── */
   .dl-page {
     padding-bottom: var(--space-16);
     margin-top: var(--navbar-h);
@@ -269,6 +297,14 @@ const COUNTDOWN = 15;
     overflow: hidden;
   }
 
+  /* ── 320x50 banner ───────────────────────────────────────── */
+  .dl-banner-320 {
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    min-height: 50px;
+  }
+
   /* ── Back link ───────────────────────────────────────────── */
   .dl-back {
     padding-top: var(--space-6);
@@ -287,7 +323,7 @@ const COUNTDOWN = 15;
 
   .dl-back__link:hover { color: var(--clr-accent); }
 
-  /* ── Main card ───────────────────────────────────────────── */
+  /* ── Card ────────────────────────────────────────────────── */
   .dl-card {
     display: grid;
     grid-template-columns: 180px 1fr;
@@ -307,11 +343,7 @@ const COUNTDOWN = 15;
     top: calc(var(--navbar-h) + var(--space-4));
   }
 
-  .dl-card__poster img {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
+  .dl-card__poster img { width: 100%; height: auto; display: block; }
 
   .dl-card__body {
     display: flex;
@@ -337,10 +369,7 @@ const COUNTDOWN = 15;
     color: #fff;
   }
 
-  .dl-card__year {
-    font-size: var(--text-sm);
-    color: var(--clr-text-muted);
-  }
+  .dl-card__year { font-size: var(--text-sm); color: var(--clr-text-muted); }
 
   .dl-card__title {
     font-family: var(--font-display);
@@ -366,7 +395,19 @@ const COUNTDOWN = 15;
     line-height: 1.6;
   }
 
-  /* ── Countdown ───────────────────────────────────────────── */
+  /* ── CTA (step 1) ────────────────────────────────────────── */
+  #dl-cta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .dl-start-btn {
+    align-self: flex-start;
+    gap: var(--space-2);
+  }
+
+  /* ── Countdown (step 2) ──────────────────────────────────── */
   .dl-countdown {
     display: flex;
     flex-direction: column;
@@ -408,7 +449,7 @@ const COUNTDOWN = 15;
     min-width: 2ch;
   }
 
-  /* ── Actions ─────────────────────────────────────────────── */
+  /* ── Actions (step 2) ────────────────────────────────────── */
   .dl-actions {
     display: flex;
     flex-direction: column;
@@ -442,11 +483,7 @@ const COUNTDOWN = 15;
     gap: var(--space-2);
   }
 
-  .dl-disclaimer {
-    font-size: var(--text-xs);
-    color: var(--clr-text-muted);
-    margin: 0;
-  }
+  .dl-disclaimer { font-size: var(--text-xs); color: var(--clr-text-muted); margin: 0; }
 
   .dl-error {
     font-size: var(--text-sm);
@@ -471,5 +508,8 @@ const COUNTDOWN = 15;
       margin: 0 auto;
       position: static;
     }
+
+    .dl-start-btn,
+    .dl-btn { align-self: stretch; justify-content: center; }
   }
 </style>
