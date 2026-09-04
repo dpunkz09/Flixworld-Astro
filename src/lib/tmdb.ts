@@ -420,3 +420,58 @@ export interface SeasonDetails {
 export async function getSeasonEpisodes(showId: number, seasonNumber: number) {
   return tmdbFetch<SeasonDetails>(`/tv/${showId}/season/${seasonNumber}`);
 }
+
+// ---------------------------------------------------------------------------
+// Supabase Carousel
+// Fetches ordered carousel entries from Supabase, then resolves each
+// tmdb_id → full Movie or TVShow via the TMDB details endpoints.
+// ---------------------------------------------------------------------------
+
+interface CarouselRow {
+  id: number;
+  tmdb_id: number;
+  type: 'movie' | 'tv';
+}
+
+/**
+ * Returns the hero carousel items in the order defined in Supabase.
+ * Falls back to an empty array on any fetch error so callers can handle
+ * graceful degradation (e.g. fall back to trending).
+ */
+export async function getCarouselItems(): Promise<(Movie | TVShow)[]> {
+  const supabaseUrl = import.meta.env.SUPABASE_URL;
+  const supabaseKey = import.meta.env.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn('[carousel] SUPABASE_URL or SUPABASE_ANON_KEY not set — skipping carousel fetch.');
+    return [];
+  }
+
+  let rows: CarouselRow[];
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/carousel?order=id.asc`, {
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+      },
+    });
+    if (!res.ok) throw new Error(`Supabase ${res.status}: ${res.statusText}`);
+    rows = await res.json() as CarouselRow[];
+  } catch (err) {
+    console.error('[carousel] Failed to fetch carousel rows:', err);
+    return [];
+  }
+
+  // Resolve all tmdb_ids concurrently; filter out any that fail
+  const settled = await Promise.allSettled(
+    rows.map((row) =>
+      row.type === 'movie'
+        ? getMovieDetails(row.tmdb_id)
+        : getTVDetails(row.tmdb_id)
+    )
+  );
+
+  return settled
+    .filter((r): r is PromiseFulfilledResult<Movie | TVShow> => r.status === 'fulfilled')
+    .map((r) => r.value);
+}

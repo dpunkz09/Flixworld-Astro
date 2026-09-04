@@ -7,6 +7,7 @@ import MediaRow from '../components/MediaRow.astro';
 import SearchBar from '../components/SearchBar.astro';
 import ContinueWatching from '../components/ContinueWatching.astro';
 import {
+  getCarouselItems,
   getTrendingMovies,
   getTrendingTV,
   getPopularMovies,
@@ -18,6 +19,7 @@ import {
 
 // Fetch all data concurrently for performance
 const [
+  carouselItems,
   trendingMovies,
   trendingTV,
   popularMovies,
@@ -26,6 +28,7 @@ const [
   topRatedTV,
   nowPlaying,
 ] = await Promise.all([
+  getCarouselItems(),
   getTrendingMovies('week'),
   getTrendingTV('week'),
   getPopularMovies(),
@@ -35,11 +38,13 @@ const [
   getNowPlayingMovies(),
 ]);
 
-// Hero: mix trending movies + TV for variety
-const heroItems = [
-  ...trendingMovies.results.slice(0, 3),
-  ...trendingTV.results.slice(0, 2),
-].slice(0, 5);
+// Hero: use Supabase-curated carousel; fall back to trending mix if empty
+const heroItems = carouselItems.length > 0
+  ? carouselItems
+  : [
+      ...trendingMovies.results.slice(0, 3),
+      ...trendingTV.results.slice(0, 2),
+    ].slice(0, 5);
 ---
 
 <BaseLayout
