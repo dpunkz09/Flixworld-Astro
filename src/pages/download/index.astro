@@ -125,15 +125,12 @@ const COUNTDOWN = 15;
                 <span id="dl-status-text">Preparing your download…</span>
               </div>
 
-              <!-- Final download link, revealed after countdown + fetch -->
-              <a
-                href="#"
+              <!-- Final download button, revealed after countdown + fetch -->
+              <button
                 class="btn btn--primary btn--lg dl-btn"
                 id="dl-btn"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-disabled="true"
-                tabindex="-1"
+                type="button"
+                disabled
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -141,7 +138,7 @@ const COUNTDOWN = 15;
                   <line x1="12" y1="15" x2="12" y2="3"/>
                 </svg>
                 Download Now
-              </a>
+              </button>
 
               <p class="dl-disclaimer">For personal offline viewing only.</p>
             </div>
@@ -164,7 +161,7 @@ const COUNTDOWN = 15;
 
 </BaseLayout>
 
-<script define:vars={{ type, id, season, episode, COUNTDOWN }}>
+<script define:vars={{ type, id, season, episode, COUNTDOWN, title }}>
   const startBtn   = document.getElementById('dl-start-btn');
   const ctaEl      = document.getElementById('dl-cta');
   const waitingEl  = document.getElementById('dl-waiting');
@@ -185,12 +182,8 @@ const COUNTDOWN = 15;
   startBtn?.addEventListener('click', () => {
     if (started) return;
     started = true;
-
-    // Swap UI: hide CTA, show countdown + status
     if (ctaEl)     ctaEl.style.display     = 'none';
     if (waitingEl) waitingEl.style.display = 'block';
-
-    // Kick off both in parallel
     fetchStream();
     setTimeout(tick, 1000);
   });
@@ -203,11 +196,7 @@ const COUNTDOWN = 15;
         : `https://servers.jpaworx.com/stream/vidzee/movie/${id}`;
 
       const res = await fetch(apiUrl);
-
-      if (!res.ok) {
-        showError(`Stream server error (${res.status})`);
-        return;
-      }
+      if (!res.ok) { showError(`Stream server error (${res.status})`); return; }
 
       const data = await res.json();
       const directUrl = data?.extracted?.url ?? data?.extracted?.streams?.[0]?.url;
@@ -252,11 +241,32 @@ const COUNTDOWN = 15;
   // ── Reveal final download button ──
   function revealButton() {
     if (!streamUrl || !btn) return;
-    btn.href = streamUrl;
-    btn.removeAttribute('aria-disabled');
-    btn.removeAttribute('tabindex');
     if (statusEl) statusEl.style.display = 'none';
+
+    // Derive a clean filename from the URL
+    const urlPath = new URL(streamUrl).pathname;
+    const rawName = urlPath.split('/').pop() ?? 'download.mkv';
+    const safeTitle = title.replace(/[^a-z0-9]/gi, '_').slice(0, 60);
+    const ext = rawName.includes('.') ? rawName.split('.').pop() : 'mkv';
+    const filename = `${safeTitle}.${ext}`;
+
+    // Build the proxy URL — forces Content-Disposition: attachment on the server
+    const proxyUrl = `/api/proxy-download?url=${encodeURIComponent(streamUrl)}&filename=${encodeURIComponent(filename)}`;
+
+    btn.removeAttribute('disabled');
     btn.style.display = 'inline-flex';
+
+    btn.addEventListener('click', () => {
+      // Trigger via a temporary <a download> — synchronous user gesture,
+      // not blocked by any browser popup/download policy
+      const a = document.createElement('a');
+      a.href = proxyUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+
     btn.focus();
   }
 
@@ -481,6 +491,12 @@ const COUNTDOWN = 15;
     display: none;
     align-self: flex-start;
     gap: var(--space-2);
+    cursor: pointer;
+  }
+
+  .dl-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .dl-disclaimer { font-size: var(--text-xs); color: var(--clr-text-muted); margin: 0; }
