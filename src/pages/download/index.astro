@@ -161,7 +161,7 @@ const COUNTDOWN = 15;
 
 </BaseLayout>
 
-<script define:vars={{ type, id, season, episode, COUNTDOWN, title }}>
+<script define:vars={{ type, id, season, episode, COUNTDOWN }}>
   const startBtn   = document.getElementById('dl-start-btn');
   const ctaEl      = document.getElementById('dl-cta');
   const waitingEl  = document.getElementById('dl-waiting');
@@ -243,28 +243,14 @@ const COUNTDOWN = 15;
     if (!streamUrl || !btn) return;
     if (statusEl) statusEl.style.display = 'none';
 
-    // Derive a clean filename from the URL
-    const urlPath = new URL(streamUrl).pathname;
-    const rawName = urlPath.split('/').pop() ?? 'download.mkv';
-    const safeTitle = title.replace(/[^a-z0-9]/gi, '_').slice(0, 60);
-    const ext = rawName.includes('.') ? rawName.split('.').pop() : 'mkv';
-    const filename = `${safeTitle}.${ext}`;
-
-    // Build the proxy URL — forces Content-Disposition: attachment on the server
-    const proxyUrl = `/api/proxy-download?url=${encodeURIComponent(streamUrl)}&filename=${encodeURIComponent(filename)}`;
-
     btn.removeAttribute('disabled');
     btn.style.display = 'inline-flex';
 
     btn.addEventListener('click', () => {
-      // Trigger via a temporary <a download> — synchronous user gesture,
-      // not blocked by any browser popup/download policy
-      const a = document.createElement('a');
-      a.href = proxyUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      // Navigate directly to the stream URL.
+      // .mkv files are not natively playable by browsers so they trigger
+      // a save-file dialog. No server traffic — the file goes CDN → user.
+      window.location.href = streamUrl;
     });
 
     btn.focus();
