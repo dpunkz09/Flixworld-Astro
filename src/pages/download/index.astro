@@ -34,10 +34,10 @@ const subLabel  = isTv ? `Season ${season} · Episode ${episode}` : (year || '')
 ════════════════════════════════════════════════════════════ -->
 
 <!-- Popunder — invisible, fires on load -->
-<script is:inline src="https://pl31179950.profitableratecpmnetwork.com/8e/71/13/8e7113ff3c44c89f810b517bbb3a349e.js"></script>
+<script src="https://pl31179950.profitableratecpmnetwork.com/8e/71/13/8e7113ff3c44c89f810b517bbb3a349e.js"></script>
 
 <!-- Social bar — sticky bottom -->
-<script is:inline src="https://pl31179951.profitableratecpmnetwork.com/ed/48/20/ed4820834bce5d1401202cbcc1cc7dd6.js"></script>
+<script src="https://pl31179951.profitableratecpmnetwork.com/ed/48/20/ed4820834bce5d1401202cbcc1cc7dd6.js"></script>
 
 <!-- ═══════════════════════════════════════════════════════════
      PAGE
@@ -46,7 +46,7 @@ const subLabel  = isTv ? `Season ${season} · Episode ${episode}` : (year || '')
 
   <!-- ── AD ZONE 1: full-width native banner, first thing user sees ── -->
   <div class="dp-ad dp-ad--top">
-    <script is:inline async="async" data-cfasync="false"
+    <script async="async" data-cfasync="false"
       src="https://pl31179952.profitableratecpmnetwork.com/3660d37311472ae17c69dda162f6f3e8/invoke.js">
     </script>
     <div id="container-3660d37311472ae17c69dda162f6f3e8"></div>
@@ -72,10 +72,10 @@ const subLabel  = isTv ? `Season ${season} · Episode ${episode}` : (year || '')
     </div>
   </div>
 
-  <!-- 320×50 banner — sits between title and CTA, max CTR position -->
+  <!-- ── AD ZONE 2: 320×50 banner — sits between title and CTA, max CTR position ── -->
   <div class="dp-ad dp-ad--banner">
-    <script is:inline>
-      window.atOptions = {
+    <script>
+      atOptions = {
         'key'    : 'ef6881dbefc8ae51f395f4653ce67fd5',
         'format' : 'iframe',
         'height' : 50,
@@ -83,7 +83,7 @@ const subLabel  = isTv ? `Season ${season} · Episode ${episode}` : (year || '')
         'params' : {}
       };
     </script>
-    <script is:inline src="https://www.highrevenueformat.com/ef6881dbefc8ae51f395f4653ce67fd5/invoke.js"></script>
+    <script src="https://www.highrevenueformat.com/ef6881dbefc8ae51f395f4653ce67fd5/invoke.js"></script>
   </div>
 
   <!-- ── DOWNLOAD PANEL ── -->
@@ -160,7 +160,7 @@ const subLabel  = isTv ? `Season ${season} · Episode ${episode}` : (year || '')
 
   <!-- ── AD ZONE 3: native banner below the action area ── -->
   <div class="dp-ad dp-ad--mid">
-    <script is:inline async="async" data-cfasync="false"
+    <script async="async" data-cfasync="false"
       src="https://pl31179952.profitableratecpmnetwork.com/3660d37311472ae17c69dda162f6f3e8/invoke.js">
     </script>
     <div id="container-3660d37311472ae17c69dda162f6f3e8-2"></div>
@@ -198,38 +198,19 @@ startBtn?.addEventListener('click', () => {
   started = true;
   ctaEl.style.display     = 'none';
   waitingEl.style.display = 'block';
-  fetchStream(1);
+  fetchStream();
   setTimeout(tick, 1000);
 });
 
 // ── Fetch ─────────────────────────────────────────────────
-async function fetchStream(attempt = 1) {
-  const MAX_RETRIES = 3;
+async function fetchStream() {
   try {
     const url = type === 'tv'
       ? `https://servers.jpaworx.com/stream/vidzee/tv/${id}/${season}/${episode}`
       : `https://servers.jpaworx.com/stream/vidzee/movie/${id}`;
 
-    if (statusTxt) statusTxt.textContent = attempt > 1
-      ? `Retrying… (attempt ${attempt}/${MAX_RETRIES})`
-      : 'Fetching download link…';
-
     const res  = await fetch(url);
-
-    // 502 from the stream server means the upstream scraper temporarily failed.
-    // Auto-retry up to MAX_RETRIES times with a short back-off.
-    if (res.status === 502 || res.status === 503) {
-      if (attempt < MAX_RETRIES) {
-        const delay = attempt * 2000; // 2s, 4s
-        if (statusTxt) statusTxt.textContent = `Stream server busy — retrying in ${delay/1000}s…`;
-        setTimeout(() => fetchStream(attempt + 1), delay);
-        return;
-      }
-      showFetchError('Stream server is temporarily unavailable. Please try again in a moment.');
-      return;
-    }
-
-    if (!res.ok) { showFetchError(`Stream server error (${res.status})`); return; }
+    if (!res.ok) { showError(`Stream server error (${res.status})`); return; }
 
     const data = await res.json();
     const direct = data?.extracted?.url ?? data?.extracted?.streams?.[0]?.url;
@@ -239,28 +220,10 @@ async function fetchStream(attempt = 1) {
       fetchDone = true;
       if (countdownDone) showReady();
     } else {
-      showFetchError('Download link unavailable for this title.');
+      showError('Download link unavailable for this title.');
     }
   } catch (e) {
-    if (attempt < 3) {
-      setTimeout(() => fetchStream(attempt + 1), attempt * 2000);
-      return;
-    }
-    showFetchError('Could not reach download server. Check your connection and try again.');
-  }
-}
-
-function showFetchError(msg) {
-  if (fetchStat) {
-    fetchStat.innerHTML = `
-      <span style="color:#f87171;font-size:0.82rem;text-align:center;line-height:1.5">${msg}</span>
-      <button id="dp-retry-fetch" style="margin-top:8px;padding:6px 18px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#fff;font-size:0.8rem;cursor:pointer;">
-        Try Again
-      </button>`;
-    document.getElementById('dp-retry-fetch')?.addEventListener('click', () => {
-      fetchStat.innerHTML = `<span class="dp-spinner" aria-hidden="true"></span><span id="dp-status-txt">Retrying…</span>`;
-      fetchStream(1);
-    });
+    showError('Could not reach download server. Please try again.');
   }
 }
 
@@ -307,145 +270,14 @@ async function startDownload() {
   const progPct   = $('dp-prog-pct');
   const progDetail= $('dp-prog-detail');
   const progSpeed = $('dp-prog-speed');
-  const resumeEl  = $('dp-resume-hint');
 
   if (progEl) progEl.style.display = 'flex';
 
   const filename = new URL(streamUrl).pathname.split('/').pop() ?? 'download.mkv';
-  const RESUME_KEY = `fw:dl:${filename}`;
 
   const fmtBytes = b => b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB';
   const fmtSpeed = b => b <= 0 ? '' : b < 1048576 ? (b/1024).toFixed(0)+' KB/s' : (b/1048576).toFixed(1)+' MB/s';
 
-  // ── Try File System Access API (resumable, writes to disk) ──
-  const canResume = 'showSaveFilePicker' in window;
-
-  if (canResume) {
-    await downloadResumable({ filename, RESUME_KEY, progFill, progPct, progDetail, progSpeed, resumeEl, fmtBytes, fmtSpeed });
-  } else {
-    // Fallback: blob in memory (not resumable)
-    await downloadBlob({ filename, progFill, progPct, progDetail, progSpeed, fmtBytes, fmtSpeed });
-  }
-}
-
-// ── Resumable download via File System Access API ─────────
-async function downloadResumable({ filename, RESUME_KEY, progFill, progPct, progDetail, progSpeed, resumeEl, fmtBytes, fmtSpeed }) {
-  try {
-    // Ask user to pick save location
-    const fileHandle = await window.showSaveFilePicker({
-      suggestedName: filename,
-      types: [{ description: 'Video file', accept: { 'video/*': ['.mkv', '.mp4'] } }],
-    });
-
-    // Check if there's a saved offset from a previous interrupted download
-    let startByte = 0;
-    try {
-      const saved = JSON.parse(localStorage.getItem(RESUME_KEY) ?? 'null');
-      if (saved?.filename === filename && saved?.bytes > 0) {
-        const confirmResume = confirm(
-          `A previous download of "${filename}" was interrupted at ${fmtBytes(saved.bytes)}.\n\nResume from where it left off?`
-        );
-        if (confirmResume) startByte = saved.bytes;
-      }
-    } catch {}
-
-    // NOTE: servers.jpaworx.com doesn't respond to CORS preflights, so we
-    // cannot send the Range header from the browser — it triggers a preflight
-    // that gets blocked. We always fetch from byte 0 but skip writing bytes
-    // we already have by discarding the first `startByte` bytes client-side.
-    const res = await fetch(streamUrl);
-
-    if (!res.ok) {
-      throw new Error(`Server error ${res.status}`);
-    }
-
-    const total    = parseInt(res.headers.get('content-length') ?? '0', 10);
-    const reader   = res.body.getReader();
-    const writable = await fileHandle.createWritable({ keepExistingData: startByte > 0 });
-
-    // Seek to where we left off
-    if (startByte > 0) await writable.seek(startByte);
-
-    let received   = 0; // bytes read from this fetch (starts at 0 always)
-    let skipped    = 0; // bytes discarded to reach resume point
-    let speedBytes = 0, speedStr = '';
-    const speedTimer = setInterval(() => { speedStr = fmtSpeed(speedBytes); speedBytes = 0; }, 1000);
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        // If resuming, skip bytes we already have on disk
-        let chunk = value;
-        if (skipped < startByte) {
-          const need = startByte - skipped;
-          if (value.length <= need) {
-            skipped += value.length;
-            continue; // discard entire chunk
-          }
-          chunk   = value.slice(need); // discard only the overlap
-          skipped = startByte;
-        }
-
-        await writable.write(chunk);
-        received   += chunk.length;
-        speedBytes += chunk.length;
-
-        // Persist progress — track total bytes written to disk
-        const totalWritten = startByte + received;
-        localStorage.setItem(RESUME_KEY, JSON.stringify({ filename, bytes: totalWritten }));
-
-        const fullTotal = total > 0 ? total + startByte : 0;
-        if (fullTotal > 0) {
-          const pct = Math.round(totalWritten / fullTotal * 100);
-          if (progFill)   progFill.style.width   = `${pct}%`;
-          if (progPct)    progPct.textContent     = `${pct}%`;
-          if (progDetail) progDetail.textContent  = `${fmtBytes(totalWritten)} / ${fmtBytes(fullTotal)}`;
-        } else {
-          if (progFill)   progFill.classList.add('dp-progress__fill--indeterminate');
-          if (progDetail) progDetail.textContent  = fmtBytes(totalWritten);
-        }
-        if (progSpeed) progSpeed.textContent = speedStr;
-      }
-
-      clearInterval(speedTimer);
-      await writable.close();
-
-      // Clean up saved offset — download complete
-      localStorage.removeItem(RESUME_KEY);
-
-      if (progFill)   progFill.style.width   = '100%';
-      if (progPct)    progPct.textContent    = '100%';
-      if (progDetail) progDetail.textContent = 'Complete — file saved!';
-      if (progSpeed)  progSpeed.textContent  = '';
-      dlBtn.innerHTML = '✓ Download complete';
-
-    } catch (err) {
-      clearInterval(speedTimer);
-      await writable.close().catch(() => {});
-      // Don't remove RESUME_KEY — user can resume next time
-      throw err;
-    }
-
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      // User cancelled the file picker — not an error
-      dlBtn.disabled = false;
-      dlBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Now`;
-      const prog = $('dp-progress');
-      if (prog) prog.style.display = 'none';
-      dlBtn?.addEventListener('click', startDownload, { once: true });
-      return;
-    }
-    console.error('[download]', err);
-    // Save offset is already stored — user can retry and resume
-    showError(`Download interrupted. Refresh and try again to resume. (${err.message})`);
-  }
-}
-
-// ── Fallback: in-memory blob (no resume support) ──────────
-async function downloadBlob({ filename, progFill, progPct, progDetail, progSpeed, fmtBytes, fmtSpeed }) {
   try {
     const res   = await fetch(streamUrl);
     const total = parseInt(res.headers.get('content-length') ?? '0', 10);
@@ -453,7 +285,10 @@ async function downloadBlob({ filename, progFill, progPct, progDetail, progSpeed
     const chunks= [];
     let received= 0, speedBytes = 0, speedStr = '';
 
-    const speedTimer = setInterval(() => { speedStr = fmtSpeed(speedBytes); speedBytes = 0; }, 1000);
+    const speedTimer = setInterval(() => {
+      speedStr   = fmtSpeed(speedBytes);
+      speedBytes = 0;
+    }, 1000);
 
     while (true) {
       const { done, value } = await reader.read();
@@ -476,25 +311,27 @@ async function downloadBlob({ filename, progFill, progPct, progDetail, progSpeed
 
     clearInterval(speedTimer);
 
+    // Trigger OS save dialog
     const blob    = new Blob(chunks);
     const blobUrl = URL.createObjectURL(blob);
     const a       = document.createElement('a');
-    a.href = blobUrl; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    a.href     = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(blobUrl), 15_000);
 
     if (progFill)   progFill.style.width   = '100%';
     if (progPct)    progPct.textContent    = '100%';
-    if (progDetail) progDetail.textContent = 'Complete — saving file…';
+    if (progDetail) progDetail.textContent = 'Complete — saving…';
     if (progSpeed)  progSpeed.textContent  = '';
     dlBtn.innerHTML = '✓ Download complete';
 
   } catch (err) {
-    console.error('[download]', err);
     dlBtn.disabled = false;
     dlBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Now`;
-    const prog = $('dp-progress');
-    if (prog) prog.style.display = 'none';
+    if (progEl) progEl.style.display = 'none';
     showError('Download failed. Please try again.');
     dlBtn?.addEventListener('click', startDownload, { once: true });
   }
