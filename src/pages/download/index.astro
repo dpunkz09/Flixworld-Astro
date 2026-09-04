@@ -74,8 +74,8 @@ const subLabel  = isTv ? `Season ${season} · Episode ${episode}` : (year || '')
 
   <!-- ── AD ZONE 2: 320×50 banner — sits between title and CTA, max CTR position ── -->
   <div class="dp-ad dp-ad--banner">
-    <script>
-      atOptions = {
+    <script is:inline>
+      window.atOptions = {
         'key'    : 'ef6881dbefc8ae51f395f4653ce67fd5',
         'format' : 'iframe',
         'height' : 50,
@@ -83,7 +83,7 @@ const subLabel  = isTv ? `Season ${season} · Episode ${episode}` : (year || '')
         'params' : {}
       };
     </script>
-    <script src="https://www.highrevenueformat.com/ef6881dbefc8ae51f395f4653ce67fd5/invoke.js"></script>
+    <script is:inline src="https://www.highrevenueformat.com/ef6881dbefc8ae51f395f4653ce67fd5/invoke.js"></script>
   </div>
 
   <!-- ── DOWNLOAD PANEL ── -->
