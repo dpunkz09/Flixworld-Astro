@@ -205,30 +205,22 @@ startBtn?.addEventListener('click', () => {
 // ── Fetch ─────────────────────────────────────────────────
 async function fetchStream() {
   try {
-    // Call our own server-side route — avoids CORS entirely since
-    // the Astro Node process fetches servers.jpaworx.com server-to-server
-    const qs = new URLSearchParams({ type, id });
-    if (type === 'tv') { qs.set('season', season); qs.set('episode', episode); }
+    const apiUrl = type === 'tv'
+      ? `https://servers.jpaworx.com/stream/vidzee/tv/${id}/${season}/${episode}`
+      : `https://servers.jpaworx.com/stream/vidzee/movie/${id}`;
 
-    const res  = await fetch(`/api/download?${qs}`);
-    if (!res.ok) {
-      let msg = `Error (${res.status})`;
-      try { const e = await res.json(); msg = e.error ?? msg; } catch {}
-      showError(msg);
-      return;
-    }
+    const res  = await fetch(apiUrl);
+    if (!res.ok) { showError(`Stream server error (${res.status})`); return; }
 
-    // Response is a JSON array [payload] — the wrapper allows keep-alive
-    // bytes to be sent before the actual payload without breaking JSON.parse.
-    const text = await res.text();
-    const data = JSON.parse(text.trim())[0];
+    const data   = await res.json();
+    const direct = data?.extracted?.url ?? data?.extracted?.streams?.[0]?.url;
 
-    if (data.ok && data.url) {
-      streamUrl = data.url;
+    if (data.ok && direct) {
+      streamUrl = direct;
       fetchDone = true;
       if (countdownDone) showReady();
     } else {
-      showError(data.error ?? 'Download link unavailable for this title.');
+      showError('Download link unavailable for this title.');
     }
   } catch (e) {
     showError('Could not reach download server. Please try again.');
