@@ -349,21 +349,25 @@ async function downloadResumable({ filename, RESUME_KEY, progFill, progPct, prog
       }
     } catch {}
 
-    const headers = startByte > 0 ? { Range: `bytes=${startByte}-` } : {};
-    const res = await fetch(streamUrl, { headers });
+    // NOTE: servers.jpaworx.com doesn't respond to CORS preflights, so we
+    // cannot send the Range header from the browser — it triggers a preflight
+    // that gets blocked. We always fetch from byte 0 but skip writing bytes
+    // we already have by discarding the first `startByte` bytes client-side.
+    const res = await fetch(streamUrl);
 
-    if (!res.ok && res.status !== 206) {
+    if (!res.ok) {
       throw new Error(`Server error ${res.status}`);
     }
 
-    const total    = parseInt(res.headers.get('content-length') ?? '0', 10) + startByte;
+    const total    = parseInt(res.headers.get('content-length') ?? '0', 10);
     const reader   = res.body.getReader();
     const writable = await fileHandle.createWritable({ keepExistingData: startByte > 0 });
 
-    // Seek to resume position if continuing
+    // Seek to where we left off
     if (startByte > 0) await writable.seek(startByte);
 
-    let received   = startByte;
+    let received   = 0; // bytes read from this fetch (starts at 0 always)
+    let skipped    = 0; // bytes discarded to reach resume point
     let speedBytes = 0, speedStr = '';
     const speedTimer = setInterval(() => { speedStr = fmtSpeed(speedBytes); speedBytes = 0; }, 1000);
 
@@ -372,21 +376,35 @@ async function downloadResumable({ filename, RESUME_KEY, progFill, progPct, prog
         const { done, value } = await reader.read();
         if (done) break;
 
-        await writable.write(value);
-        received   += value.length;
-        speedBytes += value.length;
+        // If resuming, skip bytes we already have on disk
+        let chunk = value;
+        if (skipped < startByte) {
+          const need = startByte - skipped;
+          if (value.length <= need) {
+            skipped += value.length;
+            continue; // discard entire chunk
+          }
+          chunk   = value.slice(need); // discard only the overlap
+          skipped = startByte;
+        }
 
-        // Persist progress so we can resume if interrupted
-        localStorage.setItem(RESUME_KEY, JSON.stringify({ filename, bytes: received }));
+        await writable.write(chunk);
+        received   += chunk.length;
+        speedBytes += chunk.length;
 
-        if (total > startByte) {
-          const pct = Math.round(received / total * 100);
+        // Persist progress — track total bytes written to disk
+        const totalWritten = startByte + received;
+        localStorage.setItem(RESUME_KEY, JSON.stringify({ filename, bytes: totalWritten }));
+
+        const fullTotal = total > 0 ? total + startByte : 0;
+        if (fullTotal > 0) {
+          const pct = Math.round(totalWritten / fullTotal * 100);
           if (progFill)   progFill.style.width   = `${pct}%`;
           if (progPct)    progPct.textContent     = `${pct}%`;
-          if (progDetail) progDetail.textContent  = `${fmtBytes(received)} / ${fmtBytes(total)}`;
+          if (progDetail) progDetail.textContent  = `${fmtBytes(totalWritten)} / ${fmtBytes(fullTotal)}`;
         } else {
           if (progFill)   progFill.classList.add('dp-progress__fill--indeterminate');
-          if (progDetail) progDetail.textContent  = fmtBytes(received);
+          if (progDetail) progDetail.textContent  = fmtBytes(totalWritten);
         }
         if (progSpeed) progSpeed.textContent = speedStr;
       }
