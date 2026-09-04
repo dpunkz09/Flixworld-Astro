@@ -2,7 +2,12 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 
-const STREAM_BASE = 'http://localhost:4444/stream/vidzee';
+// Use env var so production can override without code changes.
+// Falls back to 127.0.0.1 (explicit IPv4) — avoids Linux resolving
+// "localhost" to ::1 (IPv6) when the stream server only binds IPv4.
+const STREAM_BASE =
+  (import.meta.env.STREAM_SERVER_URL ?? 'http://127.0.0.1:4444') +
+  '/stream/vidzee';
 
 export const GET: APIRoute = async ({ url }) => {
   const type    = url.searchParams.get('type');     // 'movie' | 'tv'
