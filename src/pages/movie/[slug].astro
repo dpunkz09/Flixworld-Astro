@@ -71,8 +71,8 @@ const watchPath      = watchMoviePath(movie.title, releaseYear, movieId);
   <!-- ============================================================
        HERO — full-width backdrop with info overlay
   ============================================================ -->
-  <section class="detail-hero" aria-label={`${movie.title} hero`}>
-    <div class="detail-hero__backdrop">
+  <section class="detail-hero" aria-label={`${movie.title} hero`} data-nosnippet>
+    <div class="detail-hero__backdrop" data-google-auto-placed="false">
       <img
         src={backdrop}
         alt=""
@@ -384,6 +384,15 @@ const watchPath      = watchMoviePath(movie.title, releaseYear, movieId);
     align-items: flex-end;
     margin-top: var(--navbar-h);
     overflow: hidden;
+    /* Prevent AdSense auto-ads from injecting inside and breaking layout */
+    isolation: isolate;
+  }
+
+  /* Hard-block any AdSense units injected inside the hero */
+  .detail-hero ins[class*="adsbygoogle"],
+  .detail-hero iframe[id*="google_ads"],
+  .detail-hero > div[id*="google"] {
+    display: none !important;
   }
 
   .detail-hero__backdrop {

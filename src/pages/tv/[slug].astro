@@ -66,8 +66,8 @@ const watchPath = watchTVPath(show.name, firstAirYear, showId, 1, 1);
   <!-- ============================================================
        HERO
   ============================================================ -->
-  <section class="detail-hero" aria-label={`${show.name} hero`}>
-    <div class="detail-hero__backdrop">
+  <section class="detail-hero" aria-label={`${show.name} hero`} data-nosnippet>
+    <div class="detail-hero__backdrop" data-google-auto-placed="false">
       <img
         src={backdrop}
         alt=""
@@ -371,6 +371,13 @@ const watchPath = watchTVPath(show.name, firstAirYear, showId, 1, 1);
     align-items: flex-end;
     margin-top: var(--navbar-h);
     overflow: hidden;
+    isolation: isolate;
+  }
+
+  .detail-hero ins[class*="adsbygoogle"],
+  .detail-hero iframe[id*="google_ads"],
+  .detail-hero > div[id*="google"] {
+    display: none !important;
   }
 
   .detail-hero__backdrop { position: absolute; inset: 0; }

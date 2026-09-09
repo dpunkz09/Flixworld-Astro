@@ -96,6 +96,27 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
       src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3883277674447109"
       crossorigin="anonymous"
     ></script>
+    <!-- Prevent auto ads from injecting inside layout-critical containers -->
+    <style>
+      .detail-hero,
+      .detail-hero__backdrop,
+      .detail-hero__body,
+      .detail-hero__info,
+      .detail-hero__poster,
+      .detail-sidebar,
+      .watch-top,
+      .watch-sidebar {
+        /* Isolate stacking context so AdSense iframes can't escape these containers */
+        contain: layout style;
+      }
+      /* Hard cap on any auto-injected ins/iframe AdSense units inside critical areas */
+      .detail-hero ins,
+      .detail-hero iframe,
+      .detail-sidebar > ins,
+      .detail-sidebar > iframe {
+        display: none !important;
+      }
+    </style>
   </head>
   <body>
     <Navbar />
