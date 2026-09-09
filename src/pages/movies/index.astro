@@ -13,13 +13,12 @@ import {
 } from '../../lib/tmdb';
 import type { Movie } from '../../lib/tmdb';
 
-// Read filter params from URL
-const url       = Astro.url;
-const genreId   = url.searchParams.get('genre') ? Number(url.searchParams.get('genre')) : null;
-const category  = url.searchParams.get('cat') ?? 'popular';
-const page      = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
+const url      = Astro.url;
+const genreId  = url.searchParams.get('genre') ? Number(url.searchParams.get('genre')) : null;
+const category = url.searchParams.get('cat') ?? 'popular';
+const year     = url.searchParams.get('year') ? Number(url.searchParams.get('year')) : null;
+const page     = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
 
-// Fetch genres and current category concurrently
 const [genresData, moviesData] = await Promise.all([
   getMovieGenres(),
   genreId
@@ -33,11 +32,15 @@ const [genresData, moviesData] = await Promise.all([
           : getPopularMovies(page),
 ]);
 
-const genres  = genresData.genres;
-const movies  = moviesData.results as Movie[];
-const total   = moviesData.total_pages;
-
+const genres = genresData.genres;
 const activeGenre = genres.find(g => g.id === genreId);
+
+// Apply year filter client-side on the fetched page
+const allMovies = moviesData.results as Movie[];
+const movies    = year
+  ? allMovies.filter(m => m.release_date?.startsWith(String(year)))
+  : allMovies;
+const total = moviesData.total_pages;
 
 const categories = [
   { key: 'popular',     label: 'Popular' },
@@ -46,165 +49,196 @@ const categories = [
   { key: 'upcoming',    label: 'Upcoming' },
 ];
 
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 30 }, (_, i) => currentYear - i);
+
 function buildUrl(params: Record<string, string | number | null>) {
   const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
+  // Preserve existing params then override
+  const base: Record<string, string | number | null> = {
+    cat: genreId ? null : category,
+    genre: genreId,
+    year,
+    page: 1,
+    ...params,
+  };
+  for (const [k, v] of Object.entries(base)) {
     if (v !== null && v !== undefined && v !== '') p.set(k, String(v));
   }
   return `/movies?${p.toString()}`;
 }
 
+const activeCount = (genreId ? 1 : 0) + (year ? 1 : 0) + (category !== 'popular' ? 1 : 0);
+
 const pageTitle = activeGenre
   ? `${activeGenre.name} Movies`
-  : categories.find(c => c.key === category)?.label + ' Movies';
+  : (categories.find(c => c.key === category)?.label ?? 'Popular') + ' Movies';
 ---
 
 <BaseLayout
   title={`${pageTitle} | Flixworld`}
-  description={`Browse ${pageTitle.toLowerCase()} on Flixworld. Discover the best films curated from TMDB.`}
+  description={`Browse ${pageTitle.toLowerCase()} on Flixworld.`}
 >
   <div class="movies-page">
-    <div class="movies-page__header">
+    <div class="page-header">
       <div class="container">
-        <h1 class="movies-page__title">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-            <rect x="2" y="2" width="20" height="20" rx="3"/>
-            <path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/>
-          </svg>
-          Movies
-        </h1>
 
-        <!-- Category tabs -->
-        <nav class="filter-tabs" aria-label="Movie categories">
-          <ul role="list">
-            {categories.map(cat => (
-              <li>
-                <a
-                  href={buildUrl({ cat: cat.key, page: 1 })}
-                  class:list={['filter-tab', { 'filter-tab--active': !genreId && category === cat.key }]}
-                  aria-current={!genreId && category === cat.key ? 'page' : undefined}
-                >
-                  {cat.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <!-- Title row -->
+        <div class="page-title-row">
+          <h1 class="page-title">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <rect x="2" y="2" width="20" height="20" rx="3"/>
+              <path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/>
+            </svg>
+            Movies
+          </h1>
 
-        <!-- Genre pills -->
-        <div class="genre-filter" aria-label="Filter by genre">
           <button
-            class="genre-filter__toggle"
-            id="genre-toggle"
+            class:list={['filter-btn', { 'filter-btn--active': activeCount > 0 }]}
+            id="filter-toggle"
             aria-expanded="false"
-            aria-controls="genre-pills"
+            aria-controls="filter-panel"
             type="button"
+            aria-label="Toggle filters"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
             </svg>
-            {activeGenre ? `Genre: ${activeGenre.name}` : 'Genre: All'}
-            <svg class="genre-filter__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            Filters
+            {activeCount > 0 && <span class="filter-btn__badge">{activeCount}</span>}
+            <svg class="filter-btn__chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </button>
-
-          <div class="genre-filter__pills" id="genre-pills" hidden>
-            <a
-              href={buildUrl({ cat: category, page: 1 })}
-              class:list={['genre-pill', { 'active': !genreId }]}
-              aria-current={!genreId ? 'true' : undefined}
-            >
-              All
-            </a>
-            {genres.map(genre => (
-              <a
-                href={buildUrl({ genre: genre.id, page: 1 })}
-                class:list={['genre-pill', { 'active': genreId === genre.id }]}
-                aria-current={genreId === genre.id ? 'true' : undefined}
-              >
-                {genre.name}
-              </a>
-            ))}
-          </div>
         </div>
+
+        <!-- Collapsible filter panel -->
+        <div class="filter-panel" id="filter-panel" hidden>
+
+          <!-- Sort -->
+          <div class="filter-section">
+            <p class="filter-section__label">Sort</p>
+            <div class="filter-pills">
+              {categories.map(cat => (
+                <a
+                  href={buildUrl({ cat: cat.key, genre: genreId, year })}
+                  class:list={['filter-pill', { 'filter-pill--active': !genreId && category === cat.key }]}
+                  aria-current={!genreId && category === cat.key ? 'true' : undefined}
+                >
+                  {cat.label}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <!-- Year -->
+          <div class="filter-section">
+            <p class="filter-section__label">Year</p>
+            <div class="filter-pills">
+              <a
+                href={buildUrl({ cat: category, genre: genreId, year: null })}
+                class:list={['filter-pill', { 'filter-pill--active': !year }]}
+              >
+                All
+              </a>
+              {years.map(y => (
+                <a
+                  href={buildUrl({ cat: category, genre: genreId, year: y })}
+                  class:list={['filter-pill', { 'filter-pill--active': year === y }]}
+                  aria-current={year === y ? 'true' : undefined}
+                >
+                  {y}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <!-- Genre -->
+          <div class="filter-section">
+            <p class="filter-section__label">Genre</p>
+            <div class="filter-pills">
+              <a
+                href={buildUrl({ cat: category, genre: null, year })}
+                class:list={['filter-pill', { 'filter-pill--active': !genreId }]}
+              >
+                All
+              </a>
+              {genres.map(genre => (
+                <a
+                  href={buildUrl({ genre: genre.id, year })}
+                  class:list={['filter-pill', { 'filter-pill--active': genreId === genre.id }]}
+                  aria-current={genreId === genre.id ? 'true' : undefined}
+                >
+                  {genre.name}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {activeCount > 0 && (
+            <a href="/movies" class="filter-reset">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+              Reset all filters
+            </a>
+          )}
+        </div>
+
       </div>
     </div>
 
     <!-- Results -->
     <div class="container">
       <p class="results-count" aria-live="polite">
-        Showing page <strong>{page}</strong> of <strong>{total}</strong>
-        {activeGenre ? ` — ${activeGenre.name}` : ''}
+        Page <strong>{page}</strong> of <strong>{total}</strong>
+        {activeGenre && ` · ${activeGenre.name}`}
+        {year && ` · ${year}`}
       </p>
 
       {movies.length === 0 ? (
         <div class="empty-state">
-          <p>No movies found. Try a different filter.</p>
+          <p>No movies found. Try different filters.</p>
           <a href="/movies" class="btn btn--primary">Reset Filters</a>
         </div>
       ) : (
         <ul class="media-grid" role="list" aria-label={pageTitle}>
           {movies.map((movie, i) => (
-            <li>
-              <MovieCard item={movie} type="movie" lazy={i > 7} />
-            </li>
+            <li><MovieCard item={movie} type="movie" lazy={i > 7} /></li>
           ))}
         </ul>
       )}
 
-      <!-- Pagination -->
       {total > 1 && (
         <nav class="pagination" aria-label="Page navigation">
           {page > 1 && (
-            <a
-              href={buildUrl({ cat: genreId ? null : category, genre: genreId, page: page - 1 })}
-              class="btn btn--ghost"
-              aria-label="Previous page"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                <path d="m15 18-6-6 6-6"/>
-              </svg>
-              Previous
+            <a href={buildUrl({ page: page - 1 })} class="btn btn--ghost" aria-label="Previous page">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+              Prev
             </a>
           )}
-
-          <div class="pagination__pages" aria-label="Page numbers">
+          <div class="pagination__pages">
             {Array.from({ length: Math.min(7, total) }, (_, i) => {
-              // Show pages around current
               let p2: number;
-              if (total <= 7) {
-                p2 = i + 1;
-              } else if (page <= 4) {
-                p2 = i + 1;
-              } else if (page >= total - 3) {
-                p2 = total - 6 + i;
-              } else {
-                p2 = page - 3 + i;
-              }
+              if (total <= 7)        p2 = i + 1;
+              else if (page <= 4)    p2 = i + 1;
+              else if (page >= total - 3) p2 = total - 6 + i;
+              else                   p2 = page - 3 + i;
               return (
                 <a
-                  href={buildUrl({ cat: genreId ? null : category, genre: genreId, page: p2 })}
+                  href={buildUrl({ page: p2 })}
                   class:list={['pagination__page', { 'pagination__page--active': p2 === page }]}
                   aria-current={p2 === page ? 'page' : undefined}
                   aria-label={`Page ${p2}`}
-                >
-                  {p2}
-                </a>
+                >{p2}</a>
               );
             })}
           </div>
-
           {page < total && (
-            <a
-              href={buildUrl({ cat: genreId ? null : category, genre: genreId, page: page + 1 })}
-              class="btn btn--ghost"
-              aria-label="Next page"
-            >
+            <a href={buildUrl({ page: page + 1 })} class="btn btn--ghost" aria-label="Next page">
               Next
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                <path d="m9 18 6-6-6-6"/>
-              </svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
             </a>
           )}
         </nav>
@@ -213,132 +247,205 @@ const pageTitle = activeGenre
   </div>
 </BaseLayout>
 
+<script define:vars={{ activeCount }}>
+  const btn   = document.getElementById('filter-toggle');
+  const panel = document.getElementById('filter-panel');
+  const SK    = 'fw:filter-open-movies';
+
+  if (btn && panel) {
+    // Auto-open if filters are active or was previously opened
+    const wasOpen = activeCount > 0 || sessionStorage.getItem(SK) === '1';
+    if (wasOpen) {
+      panel.removeAttribute('hidden');
+      btn.setAttribute('aria-expanded', 'true');
+    }
+
+    btn.addEventListener('click', () => {
+      const open = btn.getAttribute('aria-expanded') === 'true';
+      if (open) {
+        panel.setAttribute('hidden', '');
+        btn.setAttribute('aria-expanded', 'false');
+        sessionStorage.setItem(SK, '0');
+      } else {
+        panel.removeAttribute('hidden');
+        btn.setAttribute('aria-expanded', 'true');
+        sessionStorage.setItem(SK, '1');
+      }
+    });
+  }
+</script>
+
 <style>
-  .movies-page__header {
+  /* ── Page header ──────────────────────────────────────────── */
+  .page-header {
     background: var(--clr-bg-2);
     border-bottom: 1px solid var(--clr-border);
-    padding-top: calc(var(--navbar-h) + var(--space-8));
-    padding-bottom: var(--space-6);
+    padding-top: calc(var(--navbar-h) + var(--space-6));
+    padding-bottom: var(--space-5);
   }
 
-  .movies-page__title {
+  /* ── Title row ────────────────────────────────────────────── */
+  .page-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+
+  .page-title {
     display: flex;
     align-items: center;
     gap: var(--space-3);
     font-family: var(--font-display);
-    font-size: clamp(var(--text-3xl), 5vw, var(--text-5xl));
+    font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl));
     letter-spacing: 0.03em;
-    margin-bottom: var(--space-6);
     color: var(--clr-text);
+    margin: 0;
   }
 
-  /* Category tabs */
-  .filter-tabs ul {
-    display: flex;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-    margin-bottom: var(--space-4);
-  }
-
-  .filter-tab {
-    padding: var(--space-2) var(--space-4);
+  /* ── Filter toggle button ─────────────────────────────────── */
+  .filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
     border-radius: var(--radius-full);
     font-size: var(--text-sm);
-    font-weight: 500;
+    font-weight: 600;
     color: var(--clr-text-secondary);
-    background: var(--clr-bg-elevated);
+    background: var(--clr-bg-elevated, rgba(255,255,255,0.06));
     border: 1px solid var(--clr-border);
+    cursor: pointer;
     transition: all var(--transition-fast);
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
-  .filter-tab:hover {
+  .filter-btn:hover {
     color: var(--clr-text);
     border-color: var(--clr-border-strong);
   }
 
-  .filter-tab--active {
-    background: var(--clr-accent);
-    color: #fff;
+  .filter-btn--active,
+  .filter-btn[aria-expanded="true"] {
+    color: var(--clr-accent);
     border-color: var(--clr-accent);
+    background: rgba(124,58,237,0.08);
   }
 
-  .genre-filter {
+  .filter-btn__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--clr-accent);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .filter-btn__chevron {
+    transition: transform var(--transition-fast);
+    opacity: 0.7;
+  }
+
+  .filter-btn[aria-expanded="true"] .filter-btn__chevron {
+    transform: rotate(180deg);
+  }
+
+  /* ── Filter panel ─────────────────────────────────────────── */
+  .filter-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    padding-top: var(--space-4);
+    animation: panel-open 0.18s ease;
+  }
+
+  .filter-panel[hidden] { display: none; }
+
+  @keyframes panel-open {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Filter section ───────────────────────────────────────── */
+  .filter-section {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
   }
 
-  .genre-filter__toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-full);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--clr-text-secondary);
-    background: var(--clr-bg-elevated);
-    border: 1px solid var(--clr-border);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    width: fit-content;
+  .filter-section__label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--clr-text-muted);
+    margin: 0;
   }
 
-  .genre-filter__toggle:hover {
+  /* ── Filter pills ─────────────────────────────────────────── */
+  .filter-pills {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .filter-pill {
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--clr-text-secondary);
+    background: var(--clr-bg-elevated, rgba(255,255,255,0.06));
+    border: 1px solid var(--clr-border);
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .filter-pill:hover {
     color: var(--clr-text);
     border-color: var(--clr-border-strong);
   }
 
-  .genre-filter__toggle[aria-expanded="true"] {
-    color: var(--clr-accent);
+  .filter-pill--active {
+    background: var(--clr-accent);
+    color: #fff;
     border-color: var(--clr-accent);
-    background: rgba(124, 58, 237, 0.08);
   }
 
-  .genre-filter__chevron {
-    transition: transform var(--transition-fast);
-    margin-left: auto;
+  /* ── Reset link ───────────────────────────────────────────── */
+  .filter-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: var(--text-xs);
+    color: var(--clr-text-muted);
+    text-decoration: none;
+    width: fit-content;
+    transition: color var(--transition-fast);
   }
 
-  .genre-filter__toggle[aria-expanded="true"] .genre-filter__chevron {
-    transform: rotate(180deg);
-  }
+  .filter-reset:hover { color: var(--clr-error, #ef4444); }
 
-  .genre-filter__pills {
-    display: flex;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-    padding-top: var(--space-2);
-    animation: pills-open 0.2s ease;
-  }
-
-  .genre-filter__pills[hidden] {
-    display: none;
-  }
-
-  @keyframes pills-open {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Results */
+  /* ── Results count ────────────────────────────────────────── */
   .results-count {
     font-size: var(--text-sm);
     color: var(--clr-text-muted);
-    padding-block: var(--space-6) var(--space-4);
+    padding-block: var(--space-5) var(--space-3);
   }
 
-  .results-count strong {
-    color: var(--clr-text-secondary);
-  }
+  .results-count strong { color: var(--clr-text-secondary); }
 
-  /* Grid */
-  .media-grid {
-    margin-bottom: var(--space-12);
-  }
+  .media-grid { margin-bottom: var(--space-12); }
 
-  /* Empty state */
+  /* ── Empty state ──────────────────────────────────────────── */
   .empty-state {
     display: flex;
     flex-direction: column;
@@ -350,7 +457,7 @@ const pageTitle = activeGenre
     text-align: center;
   }
 
-  /* Pagination */
+  /* ── Pagination ───────────────────────────────────────────── */
   .pagination {
     display: flex;
     align-items: center;
@@ -380,12 +487,10 @@ const pageTitle = activeGenre
     background: var(--clr-bg-elevated);
     border: 1px solid var(--clr-border);
     transition: all var(--transition-fast);
+    text-decoration: none;
   }
 
-  .pagination__page:hover {
-    color: var(--clr-text);
-    border-color: var(--clr-border-strong);
-  }
+  .pagination__page:hover { color: var(--clr-text); border-color: var(--clr-border-strong); }
 
   .pagination__page--active {
     background: var(--clr-accent);
@@ -393,75 +498,21 @@ const pageTitle = activeGenre
     border-color: var(--clr-accent);
   }
 
+  /* ── Responsive ───────────────────────────────────────────── */
   @media (max-width: 640px) {
-    .movies-page__header {
-      padding-top: calc(var(--navbar-h) + var(--space-5));
+    .page-header {
+      padding-top: calc(var(--navbar-h) + var(--space-4));
       padding-bottom: var(--space-4);
     }
 
-    .movies-page__title {
-      font-size: var(--text-2xl);
-      margin-bottom: var(--space-4);
-    }
+    .page-title { font-size: var(--text-xl); }
+    .page-title svg { width: 20px; height: 20px; }
 
-    .movies-page__title svg { width: 22px; height: 22px; }
+    .media-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
 
-    .media-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--space-3);
-    }
-
-    .pagination {
-      gap: var(--space-2);
-      padding-bottom: calc(var(--space-12) + 56px);
-    }
-
+    .pagination { gap: var(--space-2); padding-bottom: calc(var(--space-12) + 56px); }
     .pagination__pages { gap: 4px; }
-
-    .pagination__page {
-      width: 32px;
-      height: 32px;
-      font-size: var(--text-xs);
-    }
-
-    .pagination .btn {
-      padding: var(--space-2) var(--space-3);
-      font-size: var(--text-xs);
-    }
-
-    .filter-tabs ul { gap: var(--space-1); }
-
-    .filter-tab {
-      padding: var(--space-1) var(--space-3);
-      font-size: var(--text-xs);
-    }
+    .pagination__page { width: 32px; height: 32px; font-size: var(--text-xs); }
+    .pagination .btn { padding: var(--space-2) var(--space-3); font-size: var(--text-xs); }
   }
 </style>
-
-<script define:vars={{ hasActiveGenre: genreId !== null }}>
-  const toggle = document.getElementById('genre-toggle');
-  const pills  = document.getElementById('genre-pills');
-  const SK     = 'fw:genre-filter-open';
-
-  if (toggle && pills) {
-    // Auto-open if a genre filter is active, or user previously opened it
-    const wasOpen = hasActiveGenre || sessionStorage.getItem(SK) === '1';
-    if (wasOpen) {
-      pills.removeAttribute('hidden');
-      toggle.setAttribute('aria-expanded', 'true');
-    }
-
-    toggle.addEventListener('click', () => {
-      const open = toggle.getAttribute('aria-expanded') === 'true';
-      if (open) {
-        pills.setAttribute('hidden', '');
-        toggle.setAttribute('aria-expanded', 'false');
-        sessionStorage.setItem(SK, '0');
-      } else {
-        pills.removeAttribute('hidden');
-        toggle.setAttribute('aria-expanded', 'true');
-        sessionStorage.setItem(SK, '1');
-      }
-    });
-  }
-</script>
