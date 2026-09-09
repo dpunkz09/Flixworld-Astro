@@ -14,6 +14,7 @@ import {
   getTopRatedMovies,
   getTopRatedTV,
   getNetflixTop10,
+  getNetflixTop10Shows,
 } from '../lib/tmdb';
 
 // Fetch all data concurrently for performance
@@ -24,6 +25,7 @@ const [
   topRatedMovies,
   topRatedTV,
   netflixTop10,
+  netflixTop10Shows,
 ] = await Promise.all([
   getCarouselItems(),
   getTrendingMovies('week'),
@@ -31,6 +33,7 @@ const [
   getTopRatedMovies(),
   getTopRatedTV(),
   getNetflixTop10(),
+  getNetflixTop10Shows(),
 ]);
 
 // Hero: use Supabase-curated carousel; fall back to trending mix if empty
@@ -62,7 +65,7 @@ const heroItems = carouselItems.length > 0
   <ContinueWatching />
 
   <!-- Netflix Top 10 Today -->
-  <NetflixTop10 items={netflixTop10} />
+  <NetflixTop10 items={netflixTop10} shows={netflixTop10Shows} />
 
   <!-- Trending Movies -->
   <MediaRow

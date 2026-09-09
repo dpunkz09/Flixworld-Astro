@@ -91,8 +91,23 @@ const pageTitle = activeGenre
 
         <!-- Genre pills -->
         <div class="genre-filter" aria-label="Filter by genre">
-          <span class="genre-filter__label">Genre:</span>
-          <div class="genre-filter__pills">
+          <button
+            class="genre-filter__toggle"
+            id="genre-toggle"
+            aria-expanded="false"
+            aria-controls="genre-pills"
+            type="button"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
+            {activeGenre ? `Genre: ${activeGenre.name}` : 'Genre: All'}
+            <svg class="genre-filter__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          <div class="genre-filter__pills" id="genre-pills" hidden>
             <a
               href={buildUrl({ cat: category, page: 1 })}
               class:list={['genre-pill', { 'active': !genreId }]}
@@ -244,23 +259,61 @@ const pageTitle = activeGenre
 
   .genre-filter {
     display: flex;
-    align-items: flex-start;
-    gap: var(--space-3);
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: var(--space-2);
   }
 
-  .genre-filter__label {
+  .genre-filter__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
     font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--clr-text-muted);
-    padding-top: 2px;
-    white-space: nowrap;
+    font-weight: 500;
+    color: var(--clr-text-secondary);
+    background: var(--clr-bg-elevated);
+    border: 1px solid var(--clr-border);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    width: fit-content;
+  }
+
+  .genre-filter__toggle:hover {
+    color: var(--clr-text);
+    border-color: var(--clr-border-strong);
+  }
+
+  .genre-filter__toggle[aria-expanded="true"] {
+    color: var(--clr-accent);
+    border-color: var(--clr-accent);
+    background: rgba(124, 58, 237, 0.08);
+  }
+
+  .genre-filter__chevron {
+    transition: transform var(--transition-fast);
+    margin-left: auto;
+  }
+
+  .genre-filter__toggle[aria-expanded="true"] .genre-filter__chevron {
+    transform: rotate(180deg);
   }
 
   .genre-filter__pills {
     display: flex;
     gap: var(--space-2);
     flex-wrap: wrap;
+    padding-top: var(--space-2);
+    animation: pills-open 0.2s ease;
+  }
+
+  .genre-filter__pills[hidden] {
+    display: none;
+  }
+
+  @keyframes pills-open {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   .results-count {
@@ -375,3 +428,31 @@ const pageTitle = activeGenre
     }
   }
 </style>
+
+<script define:vars={{ hasActiveGenre: genreId !== null }}>
+  const toggle = document.getElementById('genre-toggle');
+  const pills  = document.getElementById('genre-pills');
+  const SK     = 'fw:genre-filter-open';
+
+  if (toggle && pills) {
+    // Auto-open if a genre filter is active, or user previously opened it
+    const wasOpen = hasActiveGenre || sessionStorage.getItem(SK) === '1';
+    if (wasOpen) {
+      pills.removeAttribute('hidden');
+      toggle.setAttribute('aria-expanded', 'true');
+    }
+
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') === 'true';
+      if (open) {
+        pills.setAttribute('hidden', '');
+        toggle.setAttribute('aria-expanded', 'false');
+        sessionStorage.setItem(SK, '0');
+      } else {
+        pills.removeAttribute('hidden');
+        toggle.setAttribute('aria-expanded', 'true');
+        sessionStorage.setItem(SK, '1');
+      }
+    });
+  }
+</script>
