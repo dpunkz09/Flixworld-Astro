@@ -1,8 +1,9 @@
 ---
 const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/movies', label: 'Movies' },
-  { href: '/tv', label: 'TV Shows' },
+  { href: '/',                              label: 'Home',     external: false },
+  { href: '/movies',                        label: 'Movies',   external: false },
+  { href: '/tv',                            label: 'TV Shows', external: false },
+  { href: 'https://anime.flixworld.xyz/',   label: 'Anime',    external: true  },
 ];
 
 const currentPath = Astro.url.pathname;
@@ -26,13 +27,25 @@ const currentPath = Astro.url.pathname;
     <!-- Primary nav -->
     <nav class="navbar__nav" aria-label="Primary navigation">
       <ul class="navbar__links" role="list">
-        {navLinks.map(({ href, label }) => (
+        {navLinks.map(({ href, label, external }) => (
           <li>
             <a
               href={href}
-              class:list={['navbar__link', { 'navbar__link--active': currentPath === href || (href !== '/' && currentPath.startsWith(href)) }]}
+              class:list={['navbar__link', {
+                'navbar__link--active': !external && (currentPath === href || (href !== '/' && currentPath.startsWith(href))),
+                'navbar__link--anime': external,
+              }]}
+              target={external ? '_blank' : undefined}
+              rel={external ? 'noopener noreferrer' : undefined}
             >
               {label}
+              {external && (
+                <svg class="navbar__ext-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+              )}
             </a>
           </li>
         ))}
@@ -59,13 +72,24 @@ const currentPath = Astro.url.pathname;
   <div class="navbar__mobile" id="mobile-menu" aria-hidden="true">
     <nav aria-label="Mobile navigation">
       <ul role="list">
-        {navLinks.map(({ href, label }) => (
+        {navLinks.map(({ href, label, external }) => (
           <li>
             <a
               href={href}
-              class:list={['navbar__mobile-link', { 'navbar__mobile-link--active': currentPath === href || (href !== '/' && currentPath.startsWith(href)) }]}
+              class:list={['navbar__mobile-link', {
+                'navbar__mobile-link--active': !external && (currentPath === href || (href !== '/' && currentPath.startsWith(href))),
+              }]}
+              target={external ? '_blank' : undefined}
+              rel={external ? 'noopener noreferrer' : undefined}
             >
               {label}
+              {external && (
+                <svg class="navbar__ext-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+              )}
             </a>
           </li>
         ))}
@@ -176,6 +200,25 @@ const currentPath = Astro.url.pathname;
     height: 2px;
     background: var(--clr-accent);
     border-radius: var(--radius-full);
+  }
+
+  /* Anime link — distinct accent so it stands out */
+  .navbar__link--anime {
+    color: #f97316;
+    font-weight: 600;
+  }
+
+  .navbar__link--anime:hover {
+    color: #fb923c;
+    background: rgba(249, 115, 22, 0.1);
+  }
+
+  .navbar__ext-icon {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 2px;
+    opacity: 0.6;
+    flex-shrink: 0;
   }
 
   /* Actions */

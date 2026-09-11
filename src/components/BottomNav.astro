@@ -2,25 +2,29 @@
 const currentPath = Astro.url.pathname;
 
 const links = [
-  { href: '/',        label: 'Home',     icon: 'home'   },
-  { href: '/movies',  label: 'Movies',   icon: 'movie'  },
-  { href: '/tv',      label: 'TV Shows', icon: 'tv'     },
-  { href: '/search',  label: 'Search',   icon: 'search' },
+  { href: '/',                             label: 'Home',     icon: 'home',       external: false },
+  { href: '/movies',                       label: 'Movies',   icon: 'movie',      external: false },
+  { href: '/tv',                           label: 'TV Shows', icon: 'tv',         external: false },
+  { href: 'https://anime.flixworld.xyz/',  label: 'Anime',    icon: 'play_circle', external: true  },
+  { href: '/search',                       label: 'Search',   icon: 'search',     external: false },
 ];
 
-function isActive(href: string) {
+function isActive(href: string, external: boolean) {
+  if (external) return false;
   if (href === '/') return currentPath === '/';
   return currentPath.startsWith(href);
 }
 ---
 
 <nav class="bottom-nav" aria-label="Mobile navigation">
-  {links.map(({ href, label, icon }) => (
+  {links.map(({ href, label, icon, external }) => (
     <a
       href={href}
-      class:list={['bottom-nav__item', { 'bottom-nav__item--active': isActive(href) }]}
+      class:list={['bottom-nav__item', { 'bottom-nav__item--active': isActive(href, external), 'bottom-nav__item--anime': external }]}
       aria-label={label}
-      aria-current={isActive(href) ? 'page' : undefined}
+      aria-current={isActive(href, external) ? 'page' : undefined}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noopener noreferrer' : undefined}
     >
       <span class="material-symbols-rounded bottom-nav__icon" aria-hidden="true">{icon}</span>
       <span class="bottom-nav__label">{label}</span>
@@ -90,6 +94,16 @@ function isActive(href: string) {
     .bottom-nav__item--active .bottom-nav__icon {
       font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
       color: var(--clr-accent);
+    }
+
+    /* Anime item — orange accent */
+    .bottom-nav__item--anime .bottom-nav__icon,
+    .bottom-nav__item--anime .bottom-nav__label {
+      color: #f97316;
+    }
+
+    .bottom-nav__item--anime:active {
+      opacity: 0.7;
     }
 
     .bottom-nav__icon {
