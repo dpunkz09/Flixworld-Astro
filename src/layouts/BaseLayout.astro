@@ -34,6 +34,8 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalUrl} />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="keywords" content="watch movies online, free movies streaming, watch tv shows online, stream movies free, netflix movies, top rated movies, trending movies, popular tv shows, top 10 movies, new movies 2026, best movies to watch, movies to stream now, watch series online, flixworld, stream for free, hd movies online, latest movies, action movies, comedy movies, drama series, sci-fi movies, horror movies, thriller movies, romance movies, documentary films, animated movies, family movies, now playing movies, upcoming movies, movie details, tv show episodes, movie ratings, imdb top movies" />
 
     <!-- Open Graph -->
     <meta property="og:type" content={type} />
@@ -81,11 +83,31 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
 
     <meta name="generator" content={Astro.generator} />
 
+    <!-- JSON-LD structured data -->
+    <script type="application/ld+json" is:inline set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Flixworld",
+      "url": "https://flixworld.xyz",
+      "description": "Discover and stream the latest movies and TV shows. Browse trending content, top-rated films, and popular series all in one place.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://flixworld.xyz/search?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      },
+      "sameAs": [
+        "https://flixworld.xyz"
+      ]
+    })} />
+
     <!-- Google Analytics (GA4) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-5RNE9D5BN6"></script>
-    <script>
+    <script is:inline>
       window.dataLayer = window.dataLayer || [];
-      function gtag(...args: unknown[]) { window.dataLayer.push(args); }
+      function gtag() { window.dataLayer.push(arguments); }
       gtag('js', new Date());
       gtag('config', 'G-5RNE9D5BN6');
     </script>
