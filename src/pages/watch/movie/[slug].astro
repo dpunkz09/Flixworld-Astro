@@ -34,8 +34,7 @@ const year     = formatYear(movie.release_date);
 const runtime  = formatRuntime(movie.runtime ?? 0);
 const poster   = imgUrl(movie.poster_path, 'w300');
 //const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
-const embedUrl = `https://vidlink.flixworld-xyz.workers.dev/movie/${movieId}`;
-
+const embedUrl = `https://mapple.fun/watch/movie/${movieId}`;
 
 // Redirect bare numeric slugs to canonical slug URL
 const canonicalSlug = watchMoviePath(movie.title, year, movieId).replace('/watch/movie/', '');
@@ -75,7 +74,6 @@ const detailPath = moviePath(movie.title, year, movieId);
             allowfullscreen
             class="watch-player__iframe"
             loading="eager"
-            sandbox="allow-forms"
           ></iframe>
         </div>
       </div>

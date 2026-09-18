@@ -40,7 +40,7 @@ const poster        = imgUrl(show.poster_path, 'w300');
 const totalSeasons  = show.number_of_seasons ?? 1;
 
 //const embedUrl  = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${episodeN}`;
-const embedUrl  = `https://vidrock.to/tv/${showId}/${seasonN}/${episodeN}`;
+const embedUrl  = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${episodeN}`;
 
 // Redirect bare numeric slugs to canonical slug URL
 const canonicalSlug = watchTVPath(show.name, year, showId, seasonN, episodeN)
