@@ -34,7 +34,7 @@ const year     = formatYear(movie.release_date);
 const runtime  = formatRuntime(movie.runtime ?? 0);
 const poster   = imgUrl(movie.poster_path, 'w300');
 //const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
-const embedUrl = `https://vidrock.to/movie/${movieId}`;
+const embedUrl = `https://vidlink.flixworld-xyz.workers.dev/movie/${movieId}`;
 
 
 // Redirect bare numeric slugs to canonical slug URL
