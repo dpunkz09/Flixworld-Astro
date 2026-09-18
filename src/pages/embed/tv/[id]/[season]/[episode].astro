@@ -1,8 +1,10 @@
 ---
 export const prerender = false;
 
-const { id } = Astro.params;
+const { id, season, episode } = Astro.params;
 if (!id || isNaN(Number(id))) return Astro.redirect('/404');
+if (!season || isNaN(Number(season))) return Astro.redirect('/404');
+if (!episode || isNaN(Number(episode))) return Astro.redirect('/404');
 ---
 
 <!doctype html>
@@ -19,14 +21,12 @@ if (!id || isNaN(Number(id))) return Astro.redirect('/404');
   </head>
   <body>
     <!--
-      This page is embedded as an iframe on the watch page.
-      It loads the proxied vidrock.to content via /api/embed, which:
-        - sends Referer + Origin headers upstream
-        - strips aclib.js and sbx.js from the HTML
-        - rewrites relative URLs to absolute upstream URLs
+      Proxied TV episode embed — loaded as an iframe on the watch page.
+      /api/embed handles: Referer/Origin headers, aclib.js + sbx.js stripping,
+      and relative URL rewriting.
     -->
     <iframe
-      src={`/api/embed?type=movie&id=${id}`}
+      src={`/api/embed?type=tv&id=${id}&season=${season}&episode=${episode}`}
       allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
       allowfullscreen
       referrerpolicy="no-referrer"

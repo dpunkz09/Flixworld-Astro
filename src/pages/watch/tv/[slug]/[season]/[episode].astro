@@ -40,7 +40,9 @@ const poster        = imgUrl(show.poster_path, 'w300');
 const totalSeasons  = show.number_of_seasons ?? 1;
 
 //const embedUrl  = `https://embed.flixworld.xyz/embed/tv/${showId}/${seasonN}/${episodeN}`;
-const embedUrl  = `https://vidrock.to/tv/${showId}/${seasonN}/${episodeN}`;
+// Relay page that loads the proxied content — proxy strips aclib.js + sbx.js,
+// injects Referer/Origin headers, and rewrites relative URLs.
+const embedUrl  = `/embed/tv/${showId}/${seasonN}/${episodeN}`;
 
 // Redirect bare numeric slugs to canonical slug URL
 const canonicalSlug = watchTVPath(show.name, year, showId, seasonN, episodeN)
@@ -86,6 +88,7 @@ const watchHistoryEntry = {
             title={`Watch ${show.name} S${seasonN}E${episodeN}`}
             allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
             allowfullscreen
+            referrerpolicy="no-referrer"
             class="watch-player__iframe"
             loading="eager"
           ></iframe>

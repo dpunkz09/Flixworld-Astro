@@ -34,9 +34,8 @@ const year     = formatYear(movie.release_date);
 const runtime  = formatRuntime(movie.runtime ?? 0);
 const poster   = imgUrl(movie.poster_path, 'w300');
 //const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
-// Route through our relay page which strips the Referer header before
-// navigating to vidrock.to (no-referrer satisfies providers that block
-// third-party referrers but allow direct/no-referer access).
+// Relay page that loads the proxied content — proxy strips aclib.js + sbx.js,
+// injects Referer/Origin headers, and rewrites relative URLs.
 const embedUrl = `/embed/movie/${movieId}`;
 
 
