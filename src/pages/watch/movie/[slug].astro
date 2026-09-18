@@ -34,9 +34,10 @@ const year     = formatYear(movie.release_date);
 const runtime  = formatRuntime(movie.runtime ?? 0);
 const poster   = imgUrl(movie.poster_path, 'w300');
 //const embedUrl = `https://embed.flixworld.xyz/embed/movie/${movieId}`;
-// Proxy through /api/embed so the server-side fetch can send the required
-// Referer and Origin headers to vidrock.to (browsers block setting these on iframes).
-const embedUrl = `/api/embed?type=movie&id=${movieId}`;
+// Route through our relay page which strips the Referer header before
+// navigating to vidrock.to (no-referrer satisfies providers that block
+// third-party referrers but allow direct/no-referer access).
+const embedUrl = `/embed/movie/${movieId}`;
 
 
 // Redirect bare numeric slugs to canonical slug URL
@@ -75,6 +76,7 @@ const detailPath = moviePath(movie.title, year, movieId);
             title={`Watch ${movie.title}`}
             allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
             allowfullscreen
+            referrerpolicy="no-referrer"
             class="watch-player__iframe"
             loading="eager"
           ></iframe>

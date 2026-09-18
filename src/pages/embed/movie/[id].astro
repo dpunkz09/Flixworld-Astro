@@ -1,0 +1,63 @@
+---
+export const prerender = false;
+
+const { id } = Astro.params;
+if (!id || isNaN(Number(id))) return Astro.redirect('/404');
+
+const targetUrl = `https://vidrock.to/movie/${id}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      Tell the browser to send the full URL as Referer when navigating away.
+      Combined with the JS redirect below, the request to vidrock.to will
+      carry Referer: https://flixworld.xyz/embed/movie/<id>
+      which satisfies same-origin-style referrer checks on their end.
+
+      If vidrock.to specifically requires Referer: https://vidrock.to/ then
+      this page alone cannot spoof that — only their own site can send it.
+      In that case use the meta refresh trick below which sets no-referrer
+      first, then redirects via a link click to avoid leaking referer at all
+      (many embed providers allow requests with no Referer in addition to
+      their own domain).
+    -->
+    <meta name="referrer" content="no-referrer" />
+    <meta http-equiv="refresh" content={`0;url=${targetUrl}`} />
+    <title>Loading player…</title>
+    <style>
+      body {
+        margin: 0;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: system-ui, sans-serif;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Loading player…</p>
+    <!--
+      The anchor rel="noreferrer" suppresses the Referer header entirely.
+      Many embed providers that check Referer treat a missing Referer the
+      same as their own domain (i.e. they block third-party embeds but allow
+      direct/no-referer access).
+    -->
+    <a id="go" href={targetUrl} rel="noreferrer" style="display:none">Go</a>
+    <script define:vars={{ targetUrl }}>
+      // Click the noreferrer link programmatically — this sends NO Referer header.
+      // Fallback: if the click doesn't trigger navigation, use location.replace.
+      const a = document.getElementById('go');
+      if (a) {
+        a.click();
+      } else {
+        location.replace(targetUrl);
+      }
+    </script>
+  </body>
+</html>
