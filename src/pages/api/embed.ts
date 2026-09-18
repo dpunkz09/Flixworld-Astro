@@ -4,32 +4,8 @@ import type { APIRoute } from 'astro';
 
 const UPSTREAM = 'https://vidrock.to';
 
-// Script filenames to strip entirely from the HTML response.
+// Script filenames to strip entirely from the proxied HTML.
 const BLOCKED_SCRIPTS = ['aclib.js', 'sbx.js'];
-
-/**
- * Strips <script> tags whose src contains any blocked filename.
- * Handles both self-closing and paired <script ...></script> forms.
- */
-function stripScripts(html: string): string {
-  for (const name of BLOCKED_SCRIPTS) {
-    // Paired: <script ... src="...aclib.js...">...</script>
-    // The [^>]* is non-greedy-friendly; we use [\s\S]*? for body.
-    const paired = new RegExp(
-      `<script[^>]+src=[^>]*${escapeRegex(name)}[^>]*>[\\s\\S]*?<\\/script>`,
-      'gi'
-    );
-    html = html.replace(paired, '<!-- blocked: ' + name + ' -->');
-
-    // Self-closing / no-body: <script ... src="...aclib.js..." />
-    const selfClose = new RegExp(
-      `<script[^>]+src=[^>]*${escapeRegex(name)}[^>]*/?>`,
-      'gi'
-    );
-    html = html.replace(selfClose, '<!-- blocked: ' + name + ' -->');
-  }
-  return html;
-}
 
 /** Escapes special regex characters in a literal string. */
 function escapeRegex(s: string): string {
@@ -37,23 +13,35 @@ function escapeRegex(s: string): string {
 }
 
 /**
- * Rewrites relative URLs in src/href/action attributes to absolute
- * ones pointing at the upstream origin, so sub-resources still load
- * when the page is served from our domain.
- *
- * Only touches values that start with / (root-relative) or are
- * plain paths — leaves http(s):// and // protocol-relative URLs alone.
+ * Strips <script> tags whose src contains any blocked filename.
+ * Handles both self-closing and paired <script …></script> forms.
  */
-function rewriteUrls(html: string, base: string): string {
-  // src="..." href="..." action="..."
+function stripBlockedScripts(html: string): string {
+  for (const name of BLOCKED_SCRIPTS) {
+    const pat = escapeRegex(name);
+    // Paired: <script ... src="...name...">...</script>
+    html = html.replace(
+      new RegExp(`<script[^>]+src=[^>]*${pat}[^>]*>[\\s\\S]*?<\\/script>`, 'gi'),
+      `<!-- blocked:${name} -->`
+    );
+    // Self-closing / bodyless: <script ... src="...name..." />  or  <script ... src="...name...">
+    html = html.replace(
+      new RegExp(`<script[^>]+src=[^>]*${pat}[^>]*/?>`, 'gi'),
+      `<!-- blocked:${name} -->`
+    );
+  }
+  return html;
+}
+
+/**
+ * Rewrites root-relative URLs in src/href/action attributes to absolute
+ * upstream URLs so sub-resources load correctly when served from our domain.
+ * Leaves http(s)://, //, data:, blob:, # and javascript: values untouched.
+ */
+function rewriteUrls(html: string): string {
   return html.replace(
-    /((?:src|href|action)=["'])(?!https?:\/\/|\/\/|data:|blob:|#|javascript:)(\/?)([^"']*)(["'])/gi,
-    (_, attr, slash, path, quote) => {
-      const abs = slash === '/'
-        ? `${base}/${path}`      // root-relative: /foo → https://vidrock.to/foo
-        : `${base}/${path}`;     // relative: foo → https://vidrock.to/foo
-      return `${attr}${abs}${quote}`;
-    }
+    /((?:src|href|action)=["'])(?!https?:\/\/|\/\/|data:|blob:|#|javascript:)(\/[^"']*)(["'])/gi,
+    `$1${UPSTREAM}$2$3`
   );
 }
 
@@ -78,10 +66,8 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   const upstreamUrl = `${UPSTREAM}${upstreamPath}`;
-
-  // Abort if upstream takes longer than 15 s
-  const ac    = new AbortController();
-  const timer = setTimeout(() => ac.abort(), 15_000);
+  const ac          = new AbortController();
+  const timer       = setTimeout(() => ac.abort(), 20_000);
 
   let upstream: Response;
   try {
@@ -100,22 +86,28 @@ export const GET: APIRoute = async ({ url }) => {
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[embed] fetch error: ${msg}`);
-    return new Response(`Upstream unreachable: ${msg}`, { status: 502 });
+    console.error(`[embed] fetch failed for ${upstreamUrl}: ${msg}`);
+    // Return a minimal player page that shows an error rather than crashing the server
+    return new Response(errorPage(msg), {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+    });
   } finally {
     clearTimeout(timer);
   }
 
   if (!upstream.ok) {
     console.error(`[embed] upstream ${upstream.status} for ${upstreamUrl}`);
-    return new Response(`Upstream error ${upstream.status}`, { status: upstream.status });
+    return new Response(errorPage(`Upstream returned ${upstream.status}`), {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+    });
   }
 
   const contentType = upstream.headers.get('content-type') ?? 'text/html; charset=utf-8';
-  const isHtml      = contentType.includes('text/html');
 
-  if (!isHtml) {
-    // For non-HTML sub-resources (JS bundles, etc.) just pass through.
+  // For non-HTML assets (JS bundles, CSS, images) pass through as-is
+  if (!contentType.includes('text/html')) {
     return new Response(upstream.body, {
       status: 200,
       headers: {
@@ -125,28 +117,27 @@ export const GET: APIRoute = async ({ url }) => {
     });
   }
 
+  // HTML path: read, rewrite, strip blocked scripts
   let html = await upstream.text();
+  html = stripBlockedScripts(html);
+  html = rewriteUrls(html);
 
-  // 1. Strip blocked ad/tracker scripts
-  html = stripScripts(html);
-
-  // 2. Rewrite root-relative URLs so assets load via upstream origin
-  html = rewriteUrls(html, UPSTREAM);
-
-  // 3. Inject a base tag as the very first thing inside <head> as a
-  //    belt-and-suspenders fallback for any URLs we missed above.
-  html = html.replace(
-    /(<head[^>]*>)/i,
-    `$1<base href="${UPSTREAM}/">`
-  );
+  // Belt-and-suspenders: inject <base> so any URLs we missed still resolve
+  html = html.replace(/(<head[^>]*>)/i, `$1<base href="${UPSTREAM}/">`);
 
   return new Response(html, {
     status: 200,
     headers: {
-      'Content-Type':  'text/html; charset=utf-8',
-      'Cache-Control': 'no-store',
-      // Allow our own iframe to embed this page
+      'Content-Type':    'text/html; charset=utf-8',
+      'Cache-Control':   'no-store',
       'X-Frame-Options': 'SAMEORIGIN',
     },
   });
 };
+
+function errorPage(msg: string): string {
+  return `<!doctype html><html><head><meta charset="UTF-8">
+<style>*{margin:0;padding:0}body{background:#000;color:#888;font-family:system-ui;
+display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:13px;}</style>
+</head><body><p>Player unavailable — ${msg.replace(/</g,'&lt;')}</p></body></html>`;
+}
